@@ -5,16 +5,16 @@ import { loadCountryPolygons } from '../../data/countries/geoData'
 import type { CountryPolygon } from '../../data/countries/geoData'
 import { logGeoDiagnostics } from '../../utils/geoDiagnostics'
 import { useElementSize } from '../../hooks/useElementSize'
-
-/** Palette del globo. Fase 1: nessun tema configurabile. */
-const COLOR_UNVISITED = 'rgba(148, 163, 184, 0.32)'
-const COLOR_UNRESOLVED = 'rgba(100, 116, 139, 0.16)'
-const COLOR_HOVER = 'rgba(203, 213, 225, 0.55)'
-const COLOR_SELECTED = 'rgba(56, 189, 248, 0.85)'
-const COLOR_SIDE = 'rgba(15, 23, 42, 0.65)'
-const COLOR_STROKE = 'rgba(15, 23, 42, 0.9)'
-const COLOR_GLOBE = '#0b1220'
-const COLOR_BACKGROUND = '#05070c'
+import { useVisitedCodes } from '../../hooks/useVisitedCodes'
+import { useTravelStore } from '../../store/travelStore'
+import {
+  COLOR_BACKGROUND,
+  COLOR_GLOBE,
+  COLOR_SIDE,
+  COLOR_STROKE,
+  polygonAltitude,
+  polygonCapColor,
+} from './globeColors'
 
 /** Sfera di base: creata una sola volta, non per render. */
 const globeMaterial = new MeshPhongMaterial({
@@ -22,22 +22,29 @@ const globeMaterial = new MeshPhongMaterial({
   shininess: 6,
 })
 
-type LoadState =
+type GeoState =
   | { status: 'loading' }
   | { status: 'ready'; polygons: CountryPolygon[] }
   | { status: 'error'; message: string }
 
 /**
- * Globo a schermo intero. Fase 1: dimostra che il GeoJSON renderizza e che
- * il click risale al codice ISO. La selezione vive solo in memoria.
+ * Globo a schermo intero. Il click marca il Paese come visitato passando
+ * dallo store, che persiste su IndexedDB.
  */
 export default function GlobeView() {
   const containerRef = useRef<HTMLDivElement>(null)
   const { width, height } = useElementSize(containerRef)
 
-  const [state, setState] = useState<LoadState>({ status: 'loading' })
+  const [geo, setGeo] = useState<GeoState>({ status: 'loading' })
   const [hovered, setHovered] = useState<CountryPolygon | null>(null)
-  const [selected, setSelected] = useState<ReadonlySet<string>>(() => new Set())
+
+  const visited = useVisitedCodes()
+  const toggleVisited = useTravelStore((state) => state.toggleVisited)
+  const hydrationStatus = useTravelStore((state) => state.status)
+  const storageMessage = useTravelStore((state) => state.storageMessage)
+  const lastError = useTravelStore((state) => state.lastError)
+
+  const dataReady = hydrationStatus === 'ready'
 
   useEffect(() => {
     let cancelled = false
@@ -46,11 +53,11 @@ export default function GlobeView() {
       .then((polygons) => {
         if (cancelled) return
         logGeoDiagnostics(polygons)
-        setState({ status: 'ready', polygons })
+        setGeo({ status: 'ready', polygons })
       })
       .catch(() => {
         if (cancelled) return
-        setState({
+        setGeo({
           status: 'error',
           message: 'Impossibile caricare la mappa dei Paesi. Ricarica la pagina per riprovare.',
         })
@@ -61,26 +68,22 @@ export default function GlobeView() {
     }
   }, [])
 
-  const polygons = state.status === 'ready' ? state.polygons : undefined
+  // I poligoni entrano in scena solo quando anche i dati salvati sono pronti:
+  // così non si vede un lampeggio da "tutto grigio" a "colorato".
+  const polygons = geo.status === 'ready' && dataReady ? geo.polygons : undefined
+
+  const hoveredIso = hovered?.iso ?? null
 
   const capColor = useCallback(
-    (polygon: object) => {
-      const item = polygon as CountryPolygon
-      if (item.iso === null) return COLOR_UNRESOLVED
-      if (selected.has(item.iso)) return COLOR_SELECTED
-      if (hovered?.iso === item.iso) return COLOR_HOVER
-      return COLOR_UNVISITED
-    },
-    [hovered, selected],
+    (polygon: object) =>
+      polygonCapColor({ iso: (polygon as CountryPolygon).iso, visited, hoveredIso }),
+    [hoveredIso, visited],
   )
 
   const altitude = useCallback(
-    (polygon: object) => {
-      const item = polygon as CountryPolygon
-      if (item.iso === null) return 0.006
-      return hovered?.iso === item.iso ? 0.028 : 0.01
-    },
-    [hovered],
+    (polygon: object) =>
+      polygonAltitude({ iso: (polygon as CountryPolygon).iso, visited, hoveredIso }),
+    [hoveredIso, visited],
   )
 
   const label = useCallback((polygon: object) => {
@@ -100,39 +103,36 @@ export default function GlobeView() {
     setHovered(item && item.iso !== null ? item : null)
   }, [])
 
-  const handleClick = useCallback((polygon: object) => {
-    const item = polygon as CountryPolygon
-    // Le feature non risolvibili restano non interattive.
-    if (item.iso === null) return
+  const handleClick = useCallback(
+    (polygon: object) => {
+      const item = polygon as CountryPolygon
+      // Le feature non risolvibili restano non interattive.
+      if (item.iso === null) return
 
-    const name = item.country?.name ?? item.featureName
-    console.log({ iso: item.iso, name })
-
-    setSelected((current) => {
-      const next = new Set(current)
-      if (next.has(item.iso as string)) {
-        next.delete(item.iso as string)
-      } else {
-        next.add(item.iso as string)
+      if (import.meta.env.DEV) {
+        console.log({ iso: item.iso, name: item.country?.name ?? item.featureName })
       }
-      return next
-    })
-  }, [])
+      void toggleVisited(item.iso)
+    },
+    [toggleVisited],
+  )
 
   const showPointerCursor = useCallback(
     (_objType: string, objData: object) => (objData as CountryPolygon)?.iso !== null,
     [],
   )
 
-  const selectedCount = selected.size
+  const visitedCount = visited.size
 
   const hint = useMemo(() => {
-    if (state.status === 'loading') return 'Caricamento della mappa…'
-    if (state.status === 'error') return state.message
-    return selectedCount === 0
-      ? 'Clicca un Paese: il codice ISO viene stampato in console.'
-      : `${selectedCount} ${selectedCount === 1 ? 'Paese selezionato' : 'Paesi selezionati'}`
-  }, [selectedCount, state])
+    if (geo.status === 'error') return geo.message
+    if (geo.status === 'loading' || !dataReady) return 'Caricamento…'
+    return visitedCount === 0
+      ? 'Clicca un Paese per marcarlo come visitato.'
+      : `${visitedCount} ${visitedCount === 1 ? 'Paese visitato' : 'Paesi visitati'}`
+  }, [dataReady, geo, visitedCount])
+
+  const isError = geo.status === 'error' || lastError !== null
 
   return (
     <div ref={containerRef} className="relative h-full w-full overflow-hidden bg-base-900">
@@ -159,18 +159,29 @@ export default function GlobeView() {
         />
       )}
 
+      {storageMessage !== null && (
+        <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-center p-4">
+          <p
+            role="status"
+            className="max-w-md rounded-xl border border-amber-500/40 bg-amber-950/70 px-4 py-2 text-center text-sm text-amber-100"
+          >
+            {storageMessage}
+          </p>
+        </div>
+      )}
+
       <div
         className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center p-6"
         aria-live="polite"
       >
         <p
           className={`rounded-full border px-4 py-2 text-sm ${
-            state.status === 'error'
+            isError
               ? 'border-red-500/40 bg-red-950/60 text-red-200'
               : 'border-white/10 bg-black/40 text-slate-300'
           }`}
         >
-          {hint}
+          {lastError ?? hint}
         </p>
       </div>
 
