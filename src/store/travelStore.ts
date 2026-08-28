@@ -147,6 +147,17 @@ export const useTravelStore = create<TravelStore>((set, get) => {
       }
     },
 
+    /**
+     * Toglie SOLO il marcatore manuale: i viaggi non vengono toccati.
+     * Di conseguenza un Paese con viaggi registrati resta `isVisited`, perché
+     * il selettore deriva da entrambe le fonti. Non è una svista.
+     *
+     * Vedi CLAUDE.md, "Decisioni prese" -> Rimozione dello stato visitato:
+     * dalla fase 4 il click sul globo apre CountryDetails e non rimuove mai
+     * nulla; lo stato si toglie dal bottone dentro CountryDetails, che chiede
+     * conferma elencando i viaggi da eliminare. Quella logica sta nella UI,
+     * non qui: lo store resta un'operazione elementare e prevedibile.
+     */
     unmarkVisited: async (code) => {
       const normalized = normalizeCode(code)
       const previous = get().manuallyMarked
@@ -161,8 +172,10 @@ export const useTravelStore = create<TravelStore>((set, get) => {
 
     /**
      * Aggiunge o toglie il marcatore manuale.
-     * Attenzione: un Paese con viaggi registrati resta "visitato" anche senza
-     * marcatore, perché `isVisited` è derivato dalle due fonti.
+     *
+     * Gesto provvisorio: è il click sul globo della fase 2. Dalla fase 4 il
+     * click aprirà CountryDetails e questa azione non sarà più collegata al
+     * globo (vedi CLAUDE.md, "Decisioni prese").
      */
     toggleVisited: async (code) => {
       const normalized = normalizeCode(code)

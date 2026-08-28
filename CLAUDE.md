@@ -103,6 +103,35 @@ route, `React.memo`/`useMemo`/`useCallback` dove serve davvero.
   interazioni col globo le collauda l'utente a mano.
 - Errori mostrati all'utente in forma comprensibile, mai stack trace nell'UI.
 
+## Decisioni prese
+
+Questioni già discusse e chiuse. Non riaprirle: implementarle così.
+
+### Rimozione dello stato "visitato" (decisa in fase 2)
+
+`isVisited` è derivato da `manuallyMarked` + `visits`, quindi togliere il
+marcatore manuale non basta a rendere un Paese non visitato se ha viaggi
+registrati. Il gesto è stato ridisegnato così:
+
+- Il click su un Paese del globo **apre CountryDetails**. Dalla fase 4 non fa
+  più toggle e non rimuove mai nulla.
+- Lo stato "visitato" si toglie **solo** dal bottone esplicito dentro
+  CountryDetails.
+- Se il Paese ha viaggi registrati, quel bottone apre una **modal di conferma**
+  che dice quanti viaggi verranno eliminati e li elenca.
+- Se non ha viaggi, toglie il marcatore senza chiedere conferma.
+
+La logica di conferma sta nella UI. `unmarkVisited` nello store resta
+un'operazione elementare: toglie il marcatore manuale e non tocca i viaggi.
+
+### Archiviazione non disponibile (decisa in fase 2)
+
+Quando IndexedDB non è utilizzabile (Safari in navigazione privata) l'app non
+si blocca: si idrata a vuoto, mostra un banner che avvisa che le modifiche
+andranno perse chiudendo la scheda, e lascia comunque operare l'utente in
+memoria. Un globo inerte senza spiegazione sarebbe peggio del rischio di
+perdere modifiche annunciate.
+
 ## Metodo di lavoro
 
 Procedere per fasi, un commit per fase. Non anticipare fasi successive.

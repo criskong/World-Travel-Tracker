@@ -113,12 +113,23 @@ describe('markVisited / unmarkVisited', () => {
     expect(isVisited(data(), 'FR')).toBe(false)
   })
 
-  it('un Paese con viaggi resta visitato anche senza marcatore manuale', async () => {
+  /**
+   * Comportamento INTENZIONALE, non un bug da correggere nello store.
+   * Vedi CLAUDE.md, "Decisioni prese" -> Rimozione dello stato visitato.
+   * `unmarkVisited` è un'operazione elementare: toglie il marcatore manuale
+   * e basta. Cancellare anche i viaggi è una decisione che richiede una
+   * conferma esplicita dell'utente, e quella conferma vive in CountryDetails
+   * (fase 4), non qui.
+   */
+  it('lascia intatti i viaggi: il Paese resta visitato, per scelta', async () => {
     await useTravelStore.getState().addVisit({ countryCode: 'JP', date: '2024-05-01' })
     await useTravelStore.getState().markVisited('JP')
     await useTravelStore.getState().unmarkVisited('JP')
 
     expect(useTravelStore.getState().manuallyMarked).toEqual([])
+    // Il viaggio non è stato toccato...
+    expect(useTravelStore.getState().visits).toHaveLength(1)
+    // ...quindi il selettore derivato lo considera ancora visitato.
     expect(isVisited(data(), 'JP')).toBe(true)
   })
 })
