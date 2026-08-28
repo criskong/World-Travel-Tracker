@@ -219,7 +219,7 @@ function GlobeViewComponent({ onSelectCountry, selectedIso }: GlobeViewProps) {
           polygonStrokeColor={strokeColor}
           polygonAltitude={altitude}
           polygonLabel={label}
-          polygonsTransitionDuration={200}
+          polygonsTransitionDuration={0}
           onPolygonHover={handleHover}
           onPolygonClick={handleClick}
           showPointerCursor={showPointerCursor}

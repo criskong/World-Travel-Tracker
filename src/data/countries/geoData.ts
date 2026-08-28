@@ -1,5 +1,6 @@
 import { getCountry } from './countries'
 import { GEOJSON_PUBLIC_PATH } from './dataset'
+import { countPolygons, dropTinyIslands, isCountryGeometry } from './geometrySimplify'
 import { featureDisplayName, resolveIso } from './isoResolver'
 import type { CountryFeature } from './isoResolver'
 import type { Country } from '../../types'
@@ -28,15 +29,34 @@ function toPolygons(features: CountryFeature[]): CountryPolygon[] {
   return features.map((feature, index) => {
     const { code, expectedUnassigned } = resolveIso(feature)
     const featureName = featureDisplayName(feature)
+
+    // La geometria alleggerita SOSTITUISCE l'originale: `feature.geometry`
+    // resta l'unica fonte, così non esistono due versioni della stessa forma.
+    // Il riferimento è stabile per tutta la sessione, e questo è essenziale:
+    // three-globe confronta `coords` per identità e ricostruirebbe la mesh a
+    // ogni update se cambiasse.
+    const geometry = isCountryGeometry(feature.geometry)
+      ? dropTinyIslands(feature.geometry)
+      : feature.geometry
+
     return {
       id: code ?? `unresolved:${featureName}:${index}`,
-      feature,
+      feature: { ...feature, geometry },
       featureName,
       iso: code,
       country: getCountry(code) ?? null,
       expectedUnassigned,
     }
   })
+}
+
+/** Poligoni totali passati a three-globe: una mesh a testa. */
+function countMeshes(polygons: CountryPolygon[]): number {
+  return polygons.reduce(
+    (total, polygon) =>
+      total + (isCountryGeometry(polygon.feature.geometry) ? countPolygons(polygon.feature.geometry) : 0),
+    0,
+  )
 }
 
 /**
@@ -72,7 +92,8 @@ export function loadCountryPolygons(): Promise<CountryPolygon[]> {
           console.log(
             `%c[geojson] ${GEOJSON_URL.split('/').pop()}`,
             'color:#38bdf8',
-            `${(body.length / 1024).toFixed(0)} KB · ${data.features.length} feature\n` +
+            `${(body.length / 1024).toFixed(0)} KB · ${data.features.length} feature · ` +
+              `${countMeshes(polygons)} mesh (${countMeshes(polygons) * 2} draw call)\n` +
               `  fetch   ${ms(startedAt, fetchedAt)}\n` +
               `  parse   ${ms(fetchedAt, parsedAt)}\n` +
               `  resolve ${ms(parsedAt, resolvedAt)}\n` +
