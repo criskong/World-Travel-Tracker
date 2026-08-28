@@ -125,6 +125,28 @@ function GlobeViewComponent({ onSelectCountry, selectedIso }: GlobeViewProps) {
     [highlightedIso, visited],
   )
 
+  /**
+   * three-globe legge la geometria con `accessorFn(polygonGeoJsonGeometry)`,
+   * il cui default è la stringa `'geometry'` — cioè `polygon.geometry`.
+   * La nostra sta annidata in `feature`, perché `CountryPolygon` porta anche
+   * `iso` e `country`. Senza questo accessor il layer trova `undefined` e
+   * lancia sul primo poligono: sfera e atmosfera restano, i Paesi no.
+   */
+  const geoJsonGeometry = useCallback(
+    (polygon: object) =>
+      (polygon as CountryPolygon).feature.geometry as { type: string; coordinates: number[] },
+    [],
+  )
+
+  /**
+   * Colori costanti, ma passati come funzioni e non come stringhe:
+   * `accessorFn` interpreta una stringa come NOME DI PROPRIETÀ, quindi
+   * `polygonSideColor="rgba(...)"` diventerebbe `polygon['rgba(...)']`, cioè
+   * `undefined`, per ogni poligono.
+   */
+  const sideColor = useCallback(() => COLOR_SIDE, [])
+  const strokeColor = useCallback(() => COLOR_STROKE, [])
+
   const label = useCallback((polygon: object) => {
     const item = polygon as CountryPolygon
     if (item.iso === null) return ''
@@ -176,9 +198,10 @@ function GlobeViewComponent({ onSelectCountry, selectedIso }: GlobeViewProps) {
           atmosphereAltitude={0.18}
           globeMaterial={globeMaterial}
           polygonsData={polygons}
+          polygonGeoJsonGeometry={geoJsonGeometry}
           polygonCapColor={capColor}
-          polygonSideColor={COLOR_SIDE}
-          polygonStrokeColor={COLOR_STROKE}
+          polygonSideColor={sideColor}
+          polygonStrokeColor={strokeColor}
           polygonAltitude={altitude}
           polygonLabel={label}
           polygonsTransitionDuration={200}

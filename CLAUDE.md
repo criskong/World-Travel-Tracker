@@ -124,6 +124,31 @@ registrati. Il gesto è stato ridisegnato così:
 La logica di conferma sta nella UI. `unmarkVisited` nello store resta
 un'operazione elementare: toglie il marcatore manuale e non tocca i viaggi.
 
+### Contratto con react-globe.gl (decisa in fase 3)
+
+I test sul globo usano un **doppio della libreria**: montare react-globe.gl
+davvero richiederebbe WebGL, che in jsdom non c'è. Conseguenza: da soli quei
+test non verificano NIENTE di ciò che la libreria si aspetta da noi.
+
+Il buco lo copre `src/components/Globe/globeAccessors.test.tsx`, che monta il
+`GlobeView` reale, intercetta le props passate a `<Globe>` e verifica che ogni
+accessor, applicato a ogni poligono del dataset, restituisca un valore del tipo
+giusto senza lanciare.
+
+**Ogni nuovo accessor passato a `<Globe>` va aggiunto a quel test**: se non c'è,
+il contratto con la libreria non è verificato da nulla. Il test fallisce da sé
+quando incontra una prop che non conosce, quindi non si può dimenticare.
+
+Due dettagli che hanno già prodotto bug silenziosi, entrambi dovuti ad
+`accessor-fn`, che three-globe usa per risolvere ogni accessor:
+
+- Il default di `polygonGeoJsonGeometry` è la stringa `'geometry'`, cioè
+  `polygon.geometry`. I nostri `CountryPolygon` hanno la geometria annidata in
+  `feature`, quindi l'accessor va passato esplicitamente.
+- Una **stringa** passata a un accessor non è un valore costante: è un NOME DI
+  PROPRIETÀ. `polygonSideColor="rgba(...)"` significa `polygon['rgba(...)']`,
+  cioè `undefined`. I valori costanti vanno passati come funzioni.
+
 ### Archiviazione non disponibile (decisa in fase 2)
 
 Quando IndexedDB non è utilizzabile (Safari in navigazione privata) l'app non
