@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Globe from 'react-globe.gl'
 import { Color, MeshPhongMaterial } from 'three'
 import { loadCountryPolygons } from '../../data/countries/geoData'
@@ -27,11 +27,32 @@ type GeoState =
   | { status: 'ready'; polygons: CountryPolygon[] }
   | { status: 'error'; message: string }
 
+export interface GlobeViewProps {
+  /**
+   * Chiamata al click su un Paese risolvibile. Il globo non modifica mai lo
+   * stato "visitato": apre CountryDetails (CLAUDE.md, "Decisioni prese").
+   */
+  onSelectCountry: (iso: string) => void
+  /** Paese attualmente aperto in CountryDetails, evidenziato sul globo. */
+  selectedIso: string | null
+}
+
 /**
- * Globo a schermo intero. Il click marca il Paese come visitato passando
- * dallo store, che persiste su IndexedDB.
+ * Contatore di montaggi, per dimostrare che il globo non viene ricreato
+ * quando cambiano le statistiche. Vive fuori dal componente perché deve
+ * sopravvivere ai render.
  */
-export default function GlobeView() {
+let mountCount = 0
+
+/**
+ * Globo a schermo intero.
+ *
+ * `memo`: le props cambiano solo quando cambia la selezione, quindi un
+ * aggiornamento delle statistiche non fa nemmeno ri-renderizzare il globo.
+ * I colori dei Paesi visitati arrivano da `useVisitedCodes`, che è una
+ * sottoscrizione interna: si aggiornano senza toccare la scena.
+ */
+function GlobeViewComponent({ onSelectCountry, selectedIso }: GlobeViewProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const { width, height } = useElementSize(containerRef)
 
@@ -39,12 +60,21 @@ export default function GlobeView() {
   const [hovered, setHovered] = useState<CountryPolygon | null>(null)
 
   const visited = useVisitedCodes()
-  const toggleVisited = useTravelStore((state) => state.toggleVisited)
   const hydrationStatus = useTravelStore((state) => state.status)
-  const storageMessage = useTravelStore((state) => state.storageMessage)
-  const lastError = useTravelStore((state) => state.lastError)
-
   const dataReady = hydrationStatus === 'ready'
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) return
+    mountCount += 1
+    console.log(
+      `%c[globe] mount #${mountCount}`,
+      'color:#38bdf8',
+      '— se questo numero non cresce mentre cambiano le statistiche, il globo non si sta rimontando',
+    )
+    return () => {
+      console.log('%c[globe] unmount', 'color:#f87171')
+    }
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -72,18 +102,27 @@ export default function GlobeView() {
   // così non si vede un lampeggio da "tutto grigio" a "colorato".
   const polygons = geo.status === 'ready' && dataReady ? geo.polygons : undefined
 
-  const hoveredIso = hovered?.iso ?? null
+  // L'evidenziazione segue la selezione quando c'è, altrimenti il puntatore.
+  const highlightedIso = selectedIso ?? hovered?.iso ?? null
 
   const capColor = useCallback(
     (polygon: object) =>
-      polygonCapColor({ iso: (polygon as CountryPolygon).iso, visited, hoveredIso }),
-    [hoveredIso, visited],
+      polygonCapColor({
+        iso: (polygon as CountryPolygon).iso,
+        visited,
+        hoveredIso: highlightedIso,
+      }),
+    [highlightedIso, visited],
   )
 
   const altitude = useCallback(
     (polygon: object) =>
-      polygonAltitude({ iso: (polygon as CountryPolygon).iso, visited, hoveredIso }),
-    [hoveredIso, visited],
+      polygonAltitude({
+        iso: (polygon as CountryPolygon).iso,
+        visited,
+        hoveredIso: highlightedIso,
+      }),
+    [highlightedIso, visited],
   )
 
   const label = useCallback((polygon: object) => {
@@ -108,13 +147,9 @@ export default function GlobeView() {
       const item = polygon as CountryPolygon
       // Le feature non risolvibili restano non interattive.
       if (item.iso === null) return
-
-      if (import.meta.env.DEV) {
-        console.log({ iso: item.iso, name: item.country?.name ?? item.featureName })
-      }
-      void toggleVisited(item.iso)
+      onSelectCountry(item.iso)
     },
-    [toggleVisited],
+    [onSelectCountry],
   )
 
   const showPointerCursor = useCallback(
@@ -122,17 +157,11 @@ export default function GlobeView() {
     [],
   )
 
-  const visitedCount = visited.size
-
   const hint = useMemo(() => {
     if (geo.status === 'error') return geo.message
-    if (geo.status === 'loading' || !dataReady) return 'Caricamento…'
-    return visitedCount === 0
-      ? 'Clicca un Paese per marcarlo come visitato.'
-      : `${visitedCount} ${visitedCount === 1 ? 'Paese visitato' : 'Paesi visitati'}`
-  }, [dataReady, geo, visitedCount])
-
-  const isError = geo.status === 'error' || lastError !== null
+    if (geo.status === 'loading' || !dataReady) return 'Caricamento della mappa…'
+    return null
+  }, [dataReady, geo])
 
   return (
     <div ref={containerRef} className="relative h-full w-full overflow-hidden bg-base-900">
@@ -159,31 +188,20 @@ export default function GlobeView() {
         />
       )}
 
-      {storageMessage !== null && (
-        <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-center p-4">
+      {hint !== null && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center p-5">
           <p
-            role="status"
-            className="max-w-md rounded-xl border border-amber-500/40 bg-amber-950/70 px-4 py-2 text-center text-sm text-amber-100"
+            aria-live="polite"
+            className={`rounded-full border px-4 py-2 text-sm ${
+              geo.status === 'error'
+                ? 'border-red-500/40 bg-red-950/70 text-red-200'
+                : 'border-edge bg-black/50 text-slate-400'
+            }`}
           >
-            {storageMessage}
+            {hint}
           </p>
         </div>
       )}
-
-      <div
-        className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center p-6"
-        aria-live="polite"
-      >
-        <p
-          className={`rounded-full border px-4 py-2 text-sm ${
-            isError
-              ? 'border-red-500/40 bg-red-950/60 text-red-200'
-              : 'border-white/10 bg-black/40 text-slate-300'
-          }`}
-        >
-          {lastError ?? hint}
-        </p>
-      </div>
 
       <style>{`
         .scene-tooltip .globe-tooltip {
@@ -208,6 +226,8 @@ export default function GlobeView() {
     </div>
   )
 }
+
+export default memo(GlobeViewComponent)
 
 /** Il tooltip di react-globe.gl accetta HTML: i nomi vanno sempre sanificati. */
 function escapeHtml(value: string): string {

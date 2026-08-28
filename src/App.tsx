@@ -1,8 +1,25 @@
 import { Suspense, lazy, useEffect } from 'react'
+import { Route, Routes } from 'react-router-dom'
+import { AppLayout } from './components/Navigation/AppLayout'
 import { useTravelStore } from './store/travelStore'
+import Home from './pages/Home'
 
-// Il bundle three.js è pesante: fuori dal chunk iniziale.
-const GlobeView = lazy(() => import('./components/Globe/GlobeView'))
+// Code splitting per route: solo la Home entra nel chunk iniziale, perché è
+// quella che l'utente vede sempre per prima.
+const Countries = lazy(() => import('./pages/Countries'))
+const Trips = lazy(() => import('./pages/Trips'))
+const Statistics = lazy(() => import('./pages/Statistics'))
+const Achievements = lazy(() => import('./pages/Achievements'))
+const Settings = lazy(() => import('./pages/Settings'))
+const NotFound = lazy(() => import('./pages/NotFound'))
+
+function RouteFallback() {
+  return (
+    <div className="flex min-h-full items-center justify-center py-16 text-sm text-slate-600">
+      Caricamento…
+    </div>
+  )
+}
 
 export default function App() {
   const hydrate = useTravelStore((state) => state.hydrate)
@@ -14,16 +31,58 @@ export default function App() {
   }, [hydrate])
 
   return (
-    <main className="h-dvh w-screen bg-base-900 text-slate-200">
-      <Suspense
-        fallback={
-          <div className="flex h-full w-full items-center justify-center text-sm text-slate-500">
-            Caricamento del globo…
-          </div>
-        }
-      >
-        <GlobeView />
-      </Suspense>
-    </main>
+    <Routes>
+      <Route element={<AppLayout />}>
+        <Route index element={<Home />} />
+        <Route
+          path="countries"
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <Countries />
+            </Suspense>
+          }
+        />
+        <Route
+          path="trips"
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <Trips />
+            </Suspense>
+          }
+        />
+        <Route
+          path="statistics"
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <Statistics />
+            </Suspense>
+          }
+        />
+        <Route
+          path="achievements"
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <Achievements />
+            </Suspense>
+          }
+        />
+        <Route
+          path="settings"
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <Settings />
+            </Suspense>
+          }
+        />
+        <Route
+          path="*"
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <NotFound />
+            </Suspense>
+          }
+        />
+      </Route>
+    </Routes>
   )
 }

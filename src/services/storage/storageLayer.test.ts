@@ -29,7 +29,7 @@ describe("confine del layer di storage", () => {
     const offenders = sourceFiles(SRC_ROOT)
       .filter((file) => !file.startsWith(STORAGE_DIR + sep))
       // I test possono raggiungere db.ts per chiudere la connessione.
-      .filter((file) => !file.endsWith('.test.ts'))
+      .filter((file) => !/\.test\.tsx?$/.test(file))
       .filter((file) => /from\s+'[^']*\/db'/.test(readFileSync(file, 'utf8')))
       .map((file) => relative(process.cwd(), file))
 

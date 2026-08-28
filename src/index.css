@@ -23,4 +23,44 @@
     overscroll-behavior: none;
     -webkit-font-smoothing: antialiased;
   }
+
+  /* Il focus deve restare visibile: la navigazione da tastiera è l'unico
+     modo per usare l'app senza puntatore. */
+  :focus-visible {
+    outline: 2px solid theme('colors.accent.DEFAULT');
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* Card standard: bordi arrotondati, ombra leggera, nessun blur.
+     Il blur è riservato ai pannelli piccoli sopra il canvas WebGL. */
+  .card {
+    @apply rounded-2xl border border-edge bg-surface shadow-card;
+  }
+
+  .scroll-area {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.edge.strong') transparent;
+  }
+
+  .scroll-area::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  .scroll-area::-webkit-scrollbar-thumb {
+    background-color: theme('colors.edge.strong');
+    border-radius: 9999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
 }
