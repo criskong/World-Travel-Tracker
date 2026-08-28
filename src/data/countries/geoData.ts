@@ -1,10 +1,11 @@
 import { getCountry } from './countries'
+import { GEOJSON_PUBLIC_PATH } from './dataset'
 import { featureDisplayName, resolveIso } from './isoResolver'
 import type { CountryFeature } from './isoResolver'
 import type { Country } from '../../types'
 
-/** Percorso del dataset committato. Mai un CDN esterno. */
-const GEOJSON_URL = `${import.meta.env.BASE_URL}data/countries-110m.geojson`
+/** Percorso del dataset committato. Il nome del file vive in `dataset.ts`. */
+const GEOJSON_URL = `${import.meta.env.BASE_URL}${GEOJSON_PUBLIC_PATH}`
 
 /** Una feature del GeoJSON già arricchita con l'esito della risoluzione ISO. */
 export interface CountryPolygon {
@@ -44,18 +45,42 @@ function toPolygons(features: CountryFeature[]): CountryPolygon[] {
  */
 export function loadCountryPolygons(): Promise<CountryPolygon[]> {
   if (!cache) {
+    const startedAt = performance.now()
+
     cache = fetch(GEOJSON_URL)
       .then((response) => {
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`)
         }
-        return response.json() as Promise<{ features?: CountryFeature[] }>
+        // `text()` invece di `json()` per poter misurare separatamente rete e
+        // parsing, e per conoscere la dimensione davvero ricevuta.
+        return response.text()
       })
-      .then((data) => {
+      .then((body) => {
+        const fetchedAt = performance.now()
+        const data = JSON.parse(body) as { features?: CountryFeature[] }
+        const parsedAt = performance.now()
+
         if (!Array.isArray(data.features)) {
           throw new Error('formato GeoJSON non valido')
         }
-        return toPolygons(data.features)
+        const polygons = toPolygons(data.features)
+        const resolvedAt = performance.now()
+
+        if (import.meta.env.DEV) {
+          const ms = (from: number, to: number) => `${(to - from).toFixed(0)} ms`
+          console.log(
+            `%c[geojson] ${GEOJSON_URL.split('/').pop()}`,
+            'color:#38bdf8',
+            `${(body.length / 1024).toFixed(0)} KB · ${data.features.length} feature\n` +
+              `  fetch   ${ms(startedAt, fetchedAt)}\n` +
+              `  parse   ${ms(fetchedAt, parsedAt)}\n` +
+              `  resolve ${ms(parsedAt, resolvedAt)}\n` +
+              `  TOTALE  ${ms(startedAt, resolvedAt)}`,
+          )
+        }
+
+        return polygons
       })
       .catch((error: unknown) => {
         // Un fallimento non deve restare in cache: al prossimo tentativo si riprova.

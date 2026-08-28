@@ -8,6 +8,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import { useTravelStore } from '../../store/travelStore'
 import { closeDatabase } from '../../services/storage/db'
 import type { CountryPolygon } from '../../data/countries/geoData'
+import { GEOJSON_FILENAME } from '../../data/countries/dataset'
 
 /**
  * CONTRATTO CON react-globe.gl.
@@ -152,12 +153,16 @@ beforeAll(() => {
     ({ width: 900, height: 500, top: 0, left: 0, right: 900, bottom: 500, x: 0, y: 0 }) as DOMRect
 
   // Stesso corpo che serve il dev server, letto dal file committato.
-  const body = readFileSync(resolve(process.cwd(), 'public/data/countries-110m.geojson'), 'utf8')
+  // Il nome arriva da `dataset.ts`: il doppio serve il dataset vero dell'app.
+  const body = readFileSync(resolve(process.cwd(), 'public/data', GEOJSON_FILENAME), 'utf8')
   globalThis.fetch = vi.fn(
     async () =>
       ({
         ok: true,
         status: 200,
+        // `geoData` usa `text()` per poter misurare rete e parsing separatamente;
+        // `json()` resta per non legare il doppio a quel dettaglio.
+        text: async () => body,
         json: async () => JSON.parse(body),
       }) as unknown as Response,
   ) as unknown as typeof fetch
@@ -214,12 +219,14 @@ describe('contratto con react-globe.gl', () => {
   it('il dataset arriva completo al layer dei poligoni', async () => {
     const { polygons } = await mountGlobe()
 
-    expect(polygons).toHaveLength(177)
-    expect(polygons.filter((polygon) => polygon.iso !== null)).toHaveLength(175)
-    expect(polygons.filter((polygon) => polygon.iso === null).map((p) => p.featureName).sort()).toEqual([
-      'Northern Cyprus',
-      'Somaliland',
-    ])
+    expect(polygons).toHaveLength(242)
+    expect(polygons.filter((polygon) => polygon.iso !== null)).toHaveLength(239)
+    expect(
+      polygons
+        .filter((polygon) => polygon.iso === null)
+        .map((polygon) => polygon.featureName)
+        .sort(),
+    ).toEqual(['Northern Cyprus', 'Siachen Glacier', 'Somaliland'])
   })
 
   for (const [scenario, selectedIso, marked] of [
@@ -254,7 +261,7 @@ describe('contratto con react-globe.gl', () => {
     const onClick = props.onPolygonClick as (p: object, e: MouseEvent, c: unknown) => void
 
     const unresolved = polygons.filter((polygon) => polygon.iso === null)
-    expect(unresolved.length).toBe(2)
+    expect(unresolved.length).toBe(3)
 
     for (const polygon of unresolved) {
       onClick(polygon, new MouseEvent('click'), { lat: 0, lng: 0, altitude: 0 })

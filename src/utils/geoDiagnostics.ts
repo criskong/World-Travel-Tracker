@@ -6,7 +6,7 @@ export interface GeoDiagnosticsReport {
   resolvedFeatures: number
   /** Feature senza codice ISO valido. */
   unresolved: Array<{ featureName: string; expectedUnassigned: boolean }>
-  /** Paesi della fonte di verità che non hanno geometria nel dataset 110m. */
+  /** Paesi della fonte di verità che non hanno geometria nel dataset. */
   countriesWithoutGeometry: number
 }
 
@@ -44,7 +44,7 @@ export function logGeoDiagnostics(polygons: CountryPolygon[]): void {
   )
   console.log(
     `Feature risolte: ${report.resolvedFeatures}/${report.totalFeatures} · ` +
-      `Paesi in countries.ts senza geometria nel dataset 110m: ${report.countriesWithoutGeometry}/${TOTAL_COUNTRIES}`,
+      `Paesi in countries.ts senza geometria nel dataset: ${report.countriesWithoutGeometry}/${TOTAL_COUNTRIES}`,
   )
   if (report.unresolved.length > 0) {
     console.table(

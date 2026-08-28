@@ -23,18 +23,23 @@ Verificare la versione di `three` richiesta da react-globe.gl e allinearla.
 
 ## Dati geografici — punti critici
 
-- Dataset: Natural Earth 110m admin-0 countries, committato in
-  `public/data/countries-110m.geojson`. Mai fetch da CDN esterni.
+- Dataset: Natural Earth **50m** admin-0 countries, committato in
+  `public/data/countries-50m.geojson`. Mai fetch da CDN esterni.
+  Il nome del file vive in `src/data/countries/dataset.ts`: app e test leggono
+  quella costante, mai un percorso scritto a mano.
+- **Peso: ~3 MB non compressi**, ~1 MB gzip. Da tenere presente per il
+  precache della PWA (fase 6) e per il primo caricamento su mobile.
 - Il GeoJSON serve SOLO per la geometria.
 - Fonte di verità per l'elenco dei Paesi: `src/data/countries/countries.ts`
   (lista ISO-3166-1 alpha-2 con nome e continente). Tutte le statistiche e i
   totali per continente si calcolano da QUESTA lista, mai contando le feature
-  del GeoJSON (che sono ~258, includono dipendenze e territori contesi).
+  del GeoJSON (che sono 242, includono dipendenze e territori contesi, e in un
+  caso assegnano lo stesso codice a più feature).
 - Risoluzione del codice ISO di una feature, in un unico modulo
   `src/data/countries/isoResolver.ts`:
   `ISO_A2` → se `-99` o mancante, `ISO_A2_EH` → se ancora mancante, mapping
   manuale per nome. Casi noti da gestire: Francia, Norvegia, Kosovo,
-  Somaliland, Cipro del Nord.
+  Somaliland, Cipro del Nord, Ghiacciaio del Siachen.
   Le feature non risolvibili si renderizzano come non interattive.
 
 ## Modello dati
@@ -148,6 +153,36 @@ Due dettagli che hanno già prodotto bug silenziosi, entrambi dovuti ad
 - Una **stringa** passata a un accessor non è un valore costante: è un NOME DI
   PROPRIETÀ. `polygonSideColor="rgba(...)"` significa `polygon['rgba(...)']`,
   cioè `undefined`. I valori costanti vanno passati come funzioni.
+
+### Dataset geografico: Natural Earth 50m (decisa dopo la fase 4)
+
+Si usa il **50m**, non il 110m. Il motivo non è la resa dei contorni ma un
+buco funzionale: nel 110m **29 Stati ONU non hanno geometria** — Malta,
+Singapore, Monaco, Vaticano, Bahrain, Maldive, Andorra, Liechtenstein,
+San Marino e altri micro-Stati — quindi sul globo non esistono e non si
+possono cliccare. Col 50m la copertura passa da 166/195 a **195/195**.
+
+Numeri, misurati:
+
+| | grezzo | gzip | feature | vertici | JSON.parse |
+|---|---|---|---|---|---|
+| 110m | 0,80 MB | 0,20 MB | 177 | 10.654 | ~5 ms |
+| 50m | 2,94 MB | 0,97 MB | 242 | 99.613 | ~13 ms |
+
+Due conseguenze da ricordare:
+
+- `Siachen Glacier` esiste solo nel 50m ed è in `UNASSIGNED_TERRITORIES`:
+  Natural Earth le dà `TYPE: "Indeterminate"` e `-99` su entrambi i campi ISO.
+- Natural Earth assegna `ISO_A2: AU` anche alle dipendenze australiane
+  (Indian Ocean Territories, Ashmore and Cartier), che nel 50m hanno feature
+  proprie. È l'unica eccezione ammessa al vincolo "un codice, una feature", ed
+  è dichiarata esplicitamente in `isoResolver.test.ts`: un duplicato diverso
+  da quello fa fallire il test.
+
+**Via di riserva se il mobile soffrisse**: `mapshaper -simplify 40% keep-shapes`
+porta il file a 1,67 MB (0,51 gzip) e 41.194 vertici mantenendo tutte le 242
+feature. Non è stata adottata: un file derivato da rigenerare a mano a ogni
+aggiornamento del dataset non vale 0,46 MB di gzip risparmiati.
 
 ### Archiviazione non disponibile (decisa in fase 2)
 

@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { featureDisplayName, resolveIso, resolveIsoA2 } from './isoResolver'
+import { GEOJSON_FILENAME } from './dataset'
+import { isKnownCountryCode } from './countries'
 import type { CountryFeature } from './isoResolver'
 
 function feature(properties: Record<string, unknown>): CountryFeature {
@@ -81,10 +83,33 @@ describe('featureDisplayName', () => {
   })
 })
 
-describe('dataset Natural Earth 110m committato', () => {
+/**
+ * Il percorso del file NON è scritto qui: arriva da `dataset.ts`, la stessa
+ * costante che l'app usa per la fetch. Cambiando dataset questi test leggono
+ * il file nuovo e i conteggi qui sotto falliscono finché non li si rivede —
+ * che è esattamente quello che deve succedere.
+ */
+describe(`dataset committato (${GEOJSON_FILENAME})`, () => {
   const geojson = JSON.parse(
-    readFileSync(resolve(process.cwd(), 'public/data/countries-110m.geojson'), 'utf8'),
+    readFileSync(resolve(process.cwd(), 'public/data', GEOJSON_FILENAME), 'utf8'),
   ) as { features: CountryFeature[] }
+
+  /**
+   * Codici ISO che Natural Earth assegna legittimamente a più di una feature.
+   * Non è un rilassamento del controllo sui duplicati: ogni eccezione elenca
+   * le feature attese, e un duplicato non previsto fa fallire il test.
+   */
+  const EXPECTED_MULTI_FEATURE_CODES: Readonly<Record<string, readonly string[]>> = {
+    // Natural Earth marca `ISO_A2: AU` anche sulle due dipendenze esterne
+    // dell'Australia, che nel 50m hanno una feature propria. Colorarle
+    // insieme all'Australia è il comportamento giusto: sono territori
+    // australiani. Nota che questo lascia CC e CX senza geometria propria.
+    AU: ['Ashmore and Cartier Islands', 'Australia', 'Indian Ocean Territories'],
+  }
+
+  it('ha il numero di feature atteso', () => {
+    expect(geojson.features).toHaveLength(242)
+  })
 
   it('risolve Francia, Norvegia e Kosovo sulle feature reali', () => {
     const byName = (name: string) =>
@@ -95,20 +120,64 @@ describe('dataset Natural Earth 110m committato', () => {
     expect(resolveIsoA2(byName('Kosovo'))).toBe('XK')
   })
 
-  it('lascia non risolte solo N. Cyprus e Somaliland', () => {
+  it('risolve 239 feature su 242', () => {
+    const resolved = geojson.features.filter((f) => resolveIsoA2(f) !== null)
+    expect(resolved).toHaveLength(239)
+  })
+
+  it('lascia non risolte solo le tre feature senza codice ISO', () => {
     const unresolved = geojson.features
       .filter((f) => resolveIsoA2(f) === null)
       .map((f) => featureDisplayName(f))
       .sort()
 
-    expect(unresolved).toEqual(['Northern Cyprus', 'Somaliland'])
+    expect(unresolved).toEqual(['Northern Cyprus', 'Siachen Glacier', 'Somaliland'])
   })
 
-  it('non assegna lo stesso codice ISO a due feature diverse', () => {
-    const codes = geojson.features
+  it('marca tutte le non risolte come attese: nessuna sorpresa per il resolver', () => {
+    const surprises = geojson.features
+      .map((f) => ({ name: featureDisplayName(f), outcome: resolveIso(f) }))
+      .filter((item) => item.outcome.code === null && !item.outcome.expectedUnassigned)
+      .map((item) => item.name)
+
+    expect(surprises).toEqual([])
+  })
+
+  it('assegna ogni codice ISO a una sola feature, salvo le eccezioni dichiarate', () => {
+    const byCode = new Map<string, string[]>()
+    for (const feature of geojson.features) {
+      const code = resolveIsoA2(feature)
+      if (code === null) continue
+      const names = byCode.get(code)
+      if (names) names.push(featureDisplayName(feature))
+      else byCode.set(code, [featureDisplayName(feature)])
+    }
+
+    const duplicated = [...byCode.entries()].filter(([, names]) => names.length > 1)
+
+    // Nessun duplicato oltre a quelli dichiarati...
+    expect(duplicated.map(([code]) => code).sort()).toEqual(
+      Object.keys(EXPECTED_MULTI_FEATURE_CODES).sort(),
+    )
+    // ...e ogni eccezione copre esattamente le feature che ci aspettiamo.
+    for (const [code, names] of duplicated) {
+      expect([...names].sort()).toEqual([...EXPECTED_MULTI_FEATURE_CODES[code]!].sort())
+    }
+  })
+
+  it("l'elenco delle eccezioni non contiene codici che non sono più duplicati", () => {
+    for (const code of Object.keys(EXPECTED_MULTI_FEATURE_CODES)) {
+      const count = geojson.features.filter((f) => resolveIsoA2(f) === code).length
+      expect(count, `${code} non è più duplicato: togli l'eccezione`).toBeGreaterThan(1)
+    }
+  })
+
+  it('ogni codice risolto esiste nella fonte di verità', () => {
+    const unknown = geojson.features
       .map((f) => resolveIsoA2(f))
       .filter((code): code is string => code !== null)
+      .filter((code) => !isKnownCountryCode(code))
 
-    expect(codes.length).toBe(new Set(codes).size)
+    expect(unknown).toEqual([])
   })
 })

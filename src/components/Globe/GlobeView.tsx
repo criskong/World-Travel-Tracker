@@ -81,11 +81,18 @@ function GlobeViewComponent({ onSelectCountry, selectedIso }: GlobeViewProps) {
 
   useEffect(() => {
     let cancelled = false
+    const mountedAt = performance.now()
 
     loadCountryPolygons()
       .then((polygons) => {
         if (cancelled) return
         logGeoDiagnostics(polygons)
+        if (import.meta.env.DEV) {
+          console.log(
+            `%c[globe] primi poligoni pronti dopo ${(performance.now() - mountedAt).toFixed(0)} ms dal mount`,
+            'color:#38bdf8',
+          )
+        }
         setGeo({ status: 'ready', polygons })
       })
       .catch(() => {

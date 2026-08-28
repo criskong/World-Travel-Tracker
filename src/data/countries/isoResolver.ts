@@ -87,8 +87,19 @@ const NAME_TO_ISO: Readonly<Record<string, string>> = {
  * Territori che compaiono nel dataset ma NON hanno un codice ISO-3166-1:
  * la mancata risoluzione è corretta e attesa, non un bug del resolver.
  * Restano visibili sul globo ma non interattivi.
+ *
+ * `siachen glacier` compare solo nel 50m: è un'area contesa fra India e
+ * Pakistan, Natural Earth le assegna `TYPE: "Indeterminate"` e `-99` sia in
+ * `ISO_A2` sia in `ISO_A2_EH`. Non esiste un codice ISO da attribuirle, e
+ * assegnarla all'uno o all'altro sarebbe una presa di posizione che questa
+ * app non ha motivo di prendere.
  */
-const UNASSIGNED_TERRITORIES = new Set(['n. cyprus', 'northern cyprus', 'somaliland'])
+const UNASSIGNED_TERRITORIES = new Set([
+  'n. cyprus',
+  'northern cyprus',
+  'somaliland',
+  'siachen glacier',
+])
 
 /** Minuscolo, senza diacritici, spazi normalizzati. */
 function normalizeName(value: string): string {

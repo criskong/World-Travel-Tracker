@@ -12,9 +12,10 @@ import type { Continent, Country, TravelData, Visit } from '../types'
  * Calcolo delle statistiche.
  *
  * Ogni totale nasce da `countries.ts`. Le feature del GeoJSON non vengono
- * MAI contate: quel file ha 177 poligoni a 110m, include territori senza
- * codice ISO e non contiene i micro-Stati. Usarlo come denominatore darebbe
- * numeri sbagliati e per giunta dipendenti dalla risoluzione della mappa.
+ * MAI contate: quel file ha 242 poligoni, include territori senza codice ISO
+ * e ne assegna uno solo a più feature (le dipendenze australiane). Usarlo
+ * come denominatore darebbe numeri sbagliati e per giunta dipendenti dalla
+ * risoluzione della mappa.
  */
 
 export interface ContinentStat {

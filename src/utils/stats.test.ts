@@ -9,6 +9,7 @@ import {
   UN_MEMBER_CODES,
   isUnMember,
 } from '../data/countries/countries'
+import { GEOJSON_FILENAME } from '../data/countries/dataset'
 import type { TravelData, Visit } from '../types'
 
 function visit(overrides: Partial<Visit> = {}): Visit {
@@ -131,10 +132,10 @@ describe('computeStats: per continente', () => {
 describe('i totali non dipendono dal GeoJSON', () => {
   it('il dataset ha meno poligoni dei Paesi tracciati: non è un denominatore valido', () => {
     const geojson = JSON.parse(
-      readFileSync(resolve(process.cwd(), 'public/data/countries-110m.geojson'), 'utf8'),
+      readFileSync(resolve(process.cwd(), 'public/data', GEOJSON_FILENAME), 'utf8'),
     ) as { features: unknown[] }
 
-    expect(geojson.features.length).toBe(177)
+    expect(geojson.features.length).toBe(242)
     expect(computeStats(empty).totalCount).toBe(195)
     expect(computeStats(empty).totalCount).not.toBe(geojson.features.length)
   })
