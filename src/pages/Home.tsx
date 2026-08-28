@@ -1,5 +1,5 @@
 import { Suspense, lazy, useCallback, useState } from 'react'
-import { CountryDetailsPanel } from '../components/CountryDetails/CountryDetailsPanel'
+import { CountryDetails } from '../components/CountryDetails/CountryDetails'
 import { StatsSection } from '../components/Stats/StatsSection'
 import { RecentTrips } from '../components/Timeline/RecentTrips'
 
@@ -39,13 +39,13 @@ export default function Home() {
       </header>
 
       <section
-        aria-label="Globo interattivo"
+        aria-label="Interactive globe"
         className="relative h-[52vh] min-h-[340px] overflow-hidden rounded-2xl border border-edge bg-base-900 shadow-card sm:h-[58vh]"
       >
         <Suspense
           fallback={
             <div className="flex h-full w-full items-center justify-center text-sm text-slate-600">
-              Caricamento del globo…
+              Loading the globe…
             </div>
           }
         >
@@ -53,7 +53,13 @@ export default function Home() {
         </Suspense>
 
         {selectedIso !== null && (
-          <CountryDetailsPanel code={selectedIso} onClose={handleClose} />
+          /*
+           * Pannello piccolo sopra il canvas: qui il blur è ammesso
+           * (CLAUDE.md, sezione Design). Mai un overlay a schermo intero.
+           */
+          <div className="pointer-events-auto absolute inset-x-3 bottom-3 top-3 z-10 flex animate-slide-in flex-col overflow-hidden rounded-2xl border border-edge-strong bg-surface-strong shadow-card backdrop-blur-md sm:inset-y-3 sm:left-auto sm:right-3 sm:w-80">
+            <CountryDetails code={selectedIso} onClose={handleClose} />
+          </div>
         )}
       </section>
 

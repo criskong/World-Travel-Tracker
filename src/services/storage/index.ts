@@ -19,6 +19,7 @@ export {
   saveVisit,
   updateVisit,
   removeVisit,
+  removeVisitsForCountry,
   replaceVisits,
   clearVisits,
 } from './trips'

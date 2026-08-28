@@ -17,7 +17,7 @@ export function Sidebar() {
         </p>
       </div>
 
-      <nav aria-label="Navigazione principale" className="flex-1 px-3">
+      <nav aria-label="Main navigation" className="flex-1 px-3">
         <ul className="flex flex-col gap-1">
           {NAV_ITEMS.map((item) => (
             <li key={item.to}>
@@ -51,7 +51,7 @@ export function Sidebar() {
         </ul>
       </nav>
 
-      <p className="px-5 py-4 text-[11px] text-slate-600">Tutti i dati restano su questo device.</p>
+      <p className="px-5 py-4 text-[11px] text-slate-600">All your data stays on this device.</p>
     </aside>
   )
 }

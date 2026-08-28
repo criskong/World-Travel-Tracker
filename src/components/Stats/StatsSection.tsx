@@ -25,30 +25,30 @@ export function StatsSection() {
   }
 
   return (
-    <section aria-label="Statistiche" className="animate-fade-up">
+    <section aria-label="Statistics" className="animate-fade-up">
       <div className="grid gap-3 sm:grid-cols-3">
         <StatTile
           icon={<MapPin size={16} aria-hidden />}
-          label="Paesi visitati"
+          label="Countries visited"
           value={`${stats.visitedCount}`}
           suffix={`/ ${stats.totalCount}`}
         />
         <StatTile
           icon={<Globe size={16} aria-hidden />}
-          label="Del mondo"
+          label="Of the world"
           value={`${stats.worldPercentage}`}
           suffix="%"
         />
         <StatTile
           icon={<Compass size={16} aria-hidden />}
-          label="Territori"
+          label="Territories"
           value={`${stats.territoriesVisited}`}
-          suffix="oltre i 195"
+          suffix="beyond the 195"
         />
       </div>
 
       <h2 className="mt-6 text-xs font-medium uppercase tracking-wider text-slate-500">
-        Per continente
+        By continent
       </h2>
       <ul className="mt-3 flex flex-col gap-2.5">
         {stats.byContinent.map((item) => (
@@ -94,7 +94,7 @@ function ContinentRow({ stat }: { stat: ContinentStat }) {
       <div
         className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/5"
         role="img"
-        aria-label={`${stat.continent}: ${stat.visited} su ${stat.total}, ${stat.percentage}%`}
+        aria-label={`${stat.continent}: ${stat.visited} of ${stat.total}, ${stat.percentage}%`}
       >
         <div
           className="h-full rounded-full bg-accent transition-[width] duration-500 ease-out"
@@ -116,13 +116,13 @@ function EmptyState() {
         <Compass size={22} strokeWidth={1.6} className="text-accent" aria-hidden />
       </div>
       <h2 className="mt-4 text-base font-semibold tracking-tight text-slate-100">
-        Il tuo mondo è ancora tutto da colorare
+        Your world is still waiting
       </h2>
       <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-slate-500">
-        Ruota il globo e clicca un Paese per aprirne i dettagli. Da lì puoi segnarlo come
-        visitato: le statistiche compariranno qui.
+        Spin the globe and tap a country to open its details. Mark it as visited from
+        there, and your numbers will show up here.
       </p>
-      <p className="mt-4 text-xs text-slate-600">0 / 195 Paesi · 0% del mondo</p>
+      <p className="mt-4 text-xs text-slate-600">0 / 195 countries · 0% of the world</p>
     </section>
   )
 }

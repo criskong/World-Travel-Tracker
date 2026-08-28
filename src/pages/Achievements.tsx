@@ -5,9 +5,9 @@ export default function Achievements() {
   return (
     <PagePlaceholder
       icon={Trophy}
-      title="Achievement"
-      description="Obiettivi che si sbloccano man mano che il mondo si colora."
-      phase="In arrivo nella fase 5"
+      title="Achievements"
+      description="Milestones that unlock as more of the world lights up."
+      phase="Coming in phase 5"
     />
   )
 }

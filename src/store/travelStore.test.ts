@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { useTravelStore } from './travelStore'
-import { isVisited } from './selectors'
+import { isVisited, visitsForCountry } from './selectors'
 import { closeDatabase } from '../services/storage/db'
 import type { TravelData } from '../types'
 
@@ -145,7 +145,7 @@ describe('addVisit / removeVisit', () => {
     const visit = await useTravelStore.getState().addVisit({ countryCode: 'JP', date: '2024-02-31' })
     expect(visit).toBeNull()
     expect(useTravelStore.getState().visits).toEqual([])
-    expect(useTravelStore.getState().lastError).toContain('Data')
+    expect(useTravelStore.getState().lastError).toContain('Invalid trip date')
   })
 
   it('rifiuta un Paese sconosciuto', async () => {
@@ -263,5 +263,110 @@ describe('persistenza attraverso un reload', () => {
 
     expect(useTravelStore.getState().manuallyMarked).toEqual([])
     expect(isVisited(data(), 'IT')).toBe(false)
+  })
+})
+
+describe('più visite dello stesso Paese', () => {
+  it('convivono e si contano tutte', async () => {
+    await useTravelStore.getState().addVisit({ countryCode: 'JP', date: '2019-04-01', city: 'Tokyo' })
+    await useTravelStore.getState().addVisit({ countryCode: 'JP', date: '2024-11-02', city: 'Osaka' })
+    await useTravelStore.getState().addVisit({ countryCode: 'JP', date: '2022-08-15', city: 'Kyoto' })
+
+    expect(useTravelStore.getState().visits).toHaveLength(3)
+    // Il Paese resta uno solo: isVisited è un insieme, non un contatore.
+    expect(isVisited(data(), 'JP')).toBe(true)
+  })
+
+  it('escono ordinate dalla più recente', async () => {
+    await useTravelStore.getState().addVisit({ countryCode: 'JP', date: '2019-04-01', city: 'Tokyo' })
+    await useTravelStore.getState().addVisit({ countryCode: 'JP', date: '2024-11-02', city: 'Osaka' })
+    await useTravelStore.getState().addVisit({ countryCode: 'JP', date: '2022-08-15', city: 'Kyoto' })
+
+    expect(visitsForCountry(data(), 'JP').map((visit) => visit.city)).toEqual([
+      'Osaka',
+      'Kyoto',
+      'Tokyo',
+    ])
+  })
+
+  it('restano ordinate anche dopo un reload', async () => {
+    await useTravelStore.getState().addVisit({ countryCode: 'JP', date: '2019-04-01', city: 'Tokyo' })
+    await useTravelStore.getState().addVisit({ countryCode: 'JP', date: '2024-11-02', city: 'Osaka' })
+    await useTravelStore.getState().addVisit({ countryCode: 'JP', date: '2022-08-15', city: 'Kyoto' })
+
+    await simulateReload()
+
+    expect(visitsForCountry(data(), 'JP').map((visit) => visit.city)).toEqual([
+      'Osaka',
+      'Kyoto',
+      'Tokyo',
+    ])
+  })
+
+  it('non mescola i viaggi di Paesi diversi', async () => {
+    await useTravelStore.getState().addVisit({ countryCode: 'JP', date: '2024-01-01' })
+    await useTravelStore.getState().addVisit({ countryCode: 'IT', date: '2024-02-01' })
+
+    expect(visitsForCountry(data(), 'JP')).toHaveLength(1)
+    expect(visitsForCountry(data(), 'IT')).toHaveLength(1)
+  })
+
+  it('togliere una visita lascia le altre e il Paese resta visitato', async () => {
+    const first = await useTravelStore.getState().addVisit({ countryCode: 'JP', date: '2019-04-01' })
+    await useTravelStore.getState().addVisit({ countryCode: 'JP', date: '2024-11-02' })
+
+    await useTravelStore.getState().removeVisit(first!.id)
+
+    expect(visitsForCountry(data(), 'JP')).toHaveLength(1)
+    expect(isVisited(data(), 'JP')).toBe(true)
+  })
+})
+
+describe('forgetCountry', () => {
+  it('toglie marcatore e viaggi insieme: il Paese torna non visitato', async () => {
+    await useTravelStore.getState().markVisited('JP')
+    await useTravelStore.getState().addVisit({ countryCode: 'JP', date: '2024-01-01' })
+    await useTravelStore.getState().addVisit({ countryCode: 'JP', date: '2024-05-01' })
+
+    await useTravelStore.getState().forgetCountry('JP')
+
+    expect(useTravelStore.getState().manuallyMarked).toEqual([])
+    expect(useTravelStore.getState().visits).toEqual([])
+    expect(isVisited(data(), 'JP')).toBe(false)
+  })
+
+  it('non tocca gli altri Paesi', async () => {
+    await useTravelStore.getState().markVisited('IT')
+    await useTravelStore.getState().addVisit({ countryCode: 'IT', date: '2024-03-01' })
+    await useTravelStore.getState().addVisit({ countryCode: 'JP', date: '2024-04-01' })
+
+    await useTravelStore.getState().forgetCountry('JP')
+
+    expect(useTravelStore.getState().manuallyMarked).toEqual(['IT'])
+    expect(visitsForCountry(data(), 'IT')).toHaveLength(1)
+    expect(isVisited(data(), 'IT')).toBe(true)
+  })
+
+  it('funziona anche su un Paese solo marcato, senza viaggi', async () => {
+    await useTravelStore.getState().markVisited('FR')
+    await useTravelStore.getState().forgetCountry('FR')
+    expect(isVisited(data(), 'FR')).toBe(false)
+  })
+
+  it('su un Paese mai visitato non fa nulla', async () => {
+    await useTravelStore.getState().markVisited('IT')
+    await useTravelStore.getState().forgetCountry('BR')
+    expect(useTravelStore.getState().manuallyMarked).toEqual(['IT'])
+  })
+
+  it('la cancellazione sopravvive al reload', async () => {
+    await useTravelStore.getState().markVisited('JP')
+    await useTravelStore.getState().addVisit({ countryCode: 'JP', date: '2024-01-01' })
+
+    await useTravelStore.getState().forgetCountry('JP')
+    await simulateReload()
+
+    expect(useTravelStore.getState().manuallyMarked).toEqual([])
+    expect(useTravelStore.getState().visits).toEqual([])
   })
 })

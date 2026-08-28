@@ -11,9 +11,11 @@ import {
   removeManuallyMarked,
   removeOrphanPhotos,
   removeVisit as removeVisitFromStorage,
+  removeVisitsForCountry,
   replaceManuallyMarked,
   replaceVisits,
   requestPersistentStorage,
+  savePhoto,
   saveVisit,
 } from '../services/storage'
 import { newId } from '../utils/id'
@@ -47,7 +49,9 @@ export interface TravelStore extends TravelData {
   markVisited: (code: string) => Promise<void>
   unmarkVisited: (code: string) => Promise<void>
   toggleVisited: (code: string) => Promise<void>
-  addVisit: (input: NewVisit) => Promise<Visit | null>
+  forgetCountry: (code: string) => Promise<void>
+  /** `photo` viene salvata come Blob e collegata al viaggio via `photoId`. */
+  addVisit: (input: NewVisit, photo?: Blob | null) => Promise<Visit | null>
   removeVisit: (id: string) => Promise<void>
   importData: (raw: unknown) => Promise<ImportOutcome>
   exportData: () => TravelDataExport
@@ -56,10 +60,10 @@ export interface TravelStore extends TravelData {
 }
 
 const STORAGE_UNAVAILABLE_MESSAGE =
-  'Archiviazione locale non disponibile (succede in navigazione privata). ' +
-  'Puoi consultare e modificare i dati, ma le modifiche andranno perse chiudendo la scheda.'
+  'Local storage is unavailable — this happens in private browsing. ' +
+  'You can still browse and edit, but changes will be lost when you close this tab.'
 
-const GENERIC_WRITE_ERROR = 'Non è stato possibile salvare la modifica. Riprova.'
+const GENERIC_WRITE_ERROR = 'Could not save your change. Please try again.'
 
 type PersistOutcome = 'saved' | 'not-persisted' | 'failed'
 
@@ -126,7 +130,7 @@ export const useTravelStore = create<TravelStore>((set, get) => {
           storage: 'unavailable',
           storageMessage: unavailable
             ? STORAGE_UNAVAILABLE_MESSAGE
-            : 'Non è stato possibile leggere i dati salvati. L’app riparte da zero in questa sessione.',
+            : 'Could not read your saved data. The app starts empty for this session.',
         })
       }
     },
@@ -134,7 +138,7 @@ export const useTravelStore = create<TravelStore>((set, get) => {
     markVisited: async (code) => {
       const normalized = normalizeCode(code)
       if (!isKnownCountryCode(normalized)) {
-        set({ lastError: `Codice Paese non riconosciuto: ${normalized}.` })
+        set({ lastError: `Unknown country code: ${normalized}.` })
         return
       }
       if (get().manuallyMarked.includes(normalized)) return
@@ -186,18 +190,75 @@ export const useTravelStore = create<TravelStore>((set, get) => {
       }
     },
 
-    addVisit: async (input) => {
+    /**
+     * Rende un Paese non visitato per davvero: toglie il marcatore manuale
+     * E cancella i suoi viaggi, perché `isVisited` deriva da entrambi.
+     *
+     * È l'operazione distruttiva dietro la modal di conferma di
+     * CountryDetails (CLAUDE.md, "Decisioni prese"). Non va mai invocata
+     * senza aver prima mostrato all'utente quanti viaggi sta eliminando:
+     * `unmarkVisited` resta l'operazione elementare e non distruttiva.
+     */
+    forgetCountry: async (code) => {
+      const normalized = normalizeCode(code)
+      const previous = snapshot(get())
+      const hadMark = previous.manuallyMarked.includes(normalized)
+      const doomed = previous.visits.filter((visit) => visit.countryCode === normalized)
+      if (!hadMark && doomed.length === 0) return
+
+      set({
+        manuallyMarked: previous.manuallyMarked.filter((item) => item !== normalized),
+        visits: previous.visits.filter((visit) => visit.countryCode !== normalized),
+        lastError: null,
+      })
+
+      const outcome = await persist(async () => {
+        if (hadMark) await removeManuallyMarked(normalized)
+        if (doomed.length > 0) {
+          await removeVisitsForCountry(normalized)
+          // Le foto dei viaggi appena eliminati non devono restare a occupare quota.
+          await removeOrphanPhotos()
+        }
+      })
+
+      if (outcome === 'failed') {
+        set({ manuallyMarked: previous.manuallyMarked, visits: previous.visits })
+      }
+    },
+
+    addVisit: async (input, photo) => {
       const countryCode = normalizeCode(input.countryCode)
       if (!isKnownCountryCode(countryCode)) {
-        set({ lastError: `Codice Paese non riconosciuto: ${countryCode}.` })
+        set({ lastError: `Unknown country code: ${countryCode}.` })
         return null
       }
       if (!isValidVisitDate(input.date)) {
-        set({ lastError: 'Data del viaggio non valida: usa il formato AAAA-MM-GG.' })
+        set({ lastError: 'Invalid trip date: use the YYYY-MM-DD format.' })
         return null
       }
 
+      // La foto va salvata PRIMA del viaggio: serve il suo id per collegarla.
+      // Se l'archiviazione non c'è, il viaggio si aggiunge lo stesso senza
+      // foto e l'avviso spiega perché.
+      let photoId = input.photoId
+      if (photo) {
+        try {
+          photoId = await savePhoto(photo)
+        } catch (error) {
+          if (error instanceof StorageUnavailableError) {
+            set({ storage: 'unavailable', storageMessage: STORAGE_UNAVAILABLE_MESSAGE })
+            photoId = undefined
+          } else {
+            set({ lastError: 'Could not save the photo. The trip was not added.' })
+            return null
+          }
+        }
+      }
+
       const visit: Visit = { ...input, id: input.id ?? newId(), countryCode }
+      if (photoId === undefined) delete visit.photoId
+      else visit.photoId = photoId
+
       const previous = get().visits
       set({ visits: [visit, ...previous], lastError: null })
 
@@ -228,7 +289,7 @@ export const useTravelStore = create<TravelStore>((set, get) => {
     importData: async (raw) => {
       const parsed = parseTravelData(raw)
       if (!parsed.ok) {
-        set({ lastError: parsed.errors[0] ?? 'File non valido.' })
+        set({ lastError: parsed.errors[0] ?? 'Invalid file.' })
         return { ok: false, errors: parsed.errors, warnings: [] }
       }
 
@@ -249,7 +310,7 @@ export const useTravelStore = create<TravelStore>((set, get) => {
         set({ manuallyMarked: previous.manuallyMarked, visits: previous.visits })
         return {
           ok: false,
-          errors: ['Import non riuscito: i dati precedenti sono stati mantenuti.'],
+          errors: ['Import failed: your previous data was kept.'],
           warnings: parsed.warnings,
         }
       }

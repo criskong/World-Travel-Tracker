@@ -70,9 +70,9 @@ describe('Home', () => {
 
     expect(screen.getByRole('heading', { name: 'World Travel Tracker' })).toBeDefined()
     await screen.findByTestId('globe')
-    expect(screen.getByText(/Il tuo mondo è ancora tutto da colorare/)).toBeDefined()
-    expect(screen.getByText(/0 \/ 195 Paesi/)).toBeDefined()
-    expect(screen.getByText(/Nessun viaggio registrato/)).toBeDefined()
+    expect(screen.getByText(/Your world is still waiting/)).toBeDefined()
+    expect(screen.getByText(/0 \/ 195 countries/)).toBeDefined()
+    expect(screen.getByText(/No trips recorded yet/)).toBeDefined()
   })
 
   it('il globo non si rimonta quando cambiano le statistiche', async () => {
@@ -91,7 +91,7 @@ describe('Home', () => {
       expect(screen.getByText('1')).toBeDefined()
     })
     expect(screen.getByText('/ 195')).toBeDefined()
-    expect(screen.queryByText(/Il tuo mondo è ancora tutto da colorare/)).toBeNull()
+    expect(screen.queryByText(/Your world is still waiting/)).toBeNull()
 
     // Altri aggiornamenti: percentuali, barre per continente, viaggi recenti.
     await act(async () => {
@@ -102,7 +102,7 @@ describe('Home', () => {
     await waitFor(() => {
       expect(screen.getByText('4')).toBeDefined()
     })
-    expect(screen.getByText(/14 lug 2024/)).toBeDefined()
+    expect(screen.getByText(/14 Jul 2024/)).toBeDefined()
 
     // Il globo è ancora quello di prima: montato una volta, mai smontato.
     expect(tracker.mounts).toBe(1)

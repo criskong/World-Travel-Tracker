@@ -8,7 +8,7 @@ import { NAV_ITEMS } from './navItems'
 export function BottomNav() {
   return (
     <nav
-      aria-label="Navigazione principale"
+      aria-label="Main navigation"
       className="shrink-0 border-t border-edge bg-base-800/95 pb-safe-b lg:hidden"
     >
       <ul className="flex items-stretch justify-between px-1">

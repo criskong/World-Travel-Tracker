@@ -5,9 +5,9 @@ export default function Settings() {
   return (
     <PagePlaceholder
       icon={SettingsIcon}
-      title="Impostazioni"
-      description="Esportazione e importazione dei dati, azzeramento e informazioni sull'archiviazione locale."
-      phase="In arrivo nella fase 6"
+      title="Settings"
+      description="Export and import your data, reset everything, and check how local storage is doing."
+      phase="Coming in phase 6"
     />
   )
 }

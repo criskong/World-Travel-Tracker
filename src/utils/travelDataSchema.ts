@@ -61,21 +61,21 @@ export function parseTravelData(input: unknown): TravelDataValidationResult {
   const warnings: string[] = []
 
   if (!isPlainObject(input)) {
-    return { ok: false, errors: ['Il file non contiene un oggetto JSON valido.'] }
+    return { ok: false, errors: ['This file does not contain a valid JSON object.'] }
   }
 
   const formatVersion = input.formatVersion
   if (typeof formatVersion === 'number' && formatVersion > TRAVEL_DATA_FORMAT_VERSION) {
     errors.push(
-      `Il file è stato creato con una versione più recente dell'app (formato ${formatVersion}).`,
+      `This file was created by a newer version of the app (format ${formatVersion}).`,
     )
   }
 
   if (!Array.isArray(input.manuallyMarked)) {
-    errors.push('Campo "manuallyMarked" mancante o non è un elenco.')
+    errors.push('Missing "manuallyMarked" field, or it is not a list.')
   }
   if (!Array.isArray(input.visits)) {
-    errors.push('Campo "visits" mancante o non è un elenco.')
+    errors.push('Missing "visits" field, or it is not a list.')
   }
   if (errors.length > 0) {
     return { ok: false, errors }
@@ -94,7 +94,7 @@ export function parseTravelData(input: unknown): TravelDataValidationResult {
   }
   if (discardedMarked > 0) {
     warnings.push(
-      `${discardedMarked} ${discardedMarked === 1 ? 'Paese ignorato' : 'Paesi ignorati'}: codice ISO non riconosciuto.`,
+      `${discardedMarked} ${discardedMarked === 1 ? 'country was' : 'countries were'} skipped: unknown ISO code.`,
     )
   }
 
@@ -128,7 +128,7 @@ export function parseTravelData(input: unknown): TravelDataValidationResult {
 
   if (discardedVisits > 0) {
     warnings.push(
-      `${discardedVisits} ${discardedVisits === 1 ? 'viaggio ignorato' : 'viaggi ignorati'}: dati incompleti o non validi.`,
+      `${discardedVisits} ${discardedVisits === 1 ? 'trip was' : 'trips were'} skipped: incomplete or invalid data.`,
     )
   }
 

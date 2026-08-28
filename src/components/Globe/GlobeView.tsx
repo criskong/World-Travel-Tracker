@@ -6,6 +6,7 @@ import type { CountryPolygon } from '../../data/countries/geoData'
 import { logGeoDiagnostics } from '../../utils/geoDiagnostics'
 import { useElementSize } from '../../hooks/useElementSize'
 import { useVisitedCodes } from '../../hooks/useVisitedCodes'
+import { useVisitedTransitions } from '../../hooks/useVisitedTransitions'
 import { useTravelStore } from '../../store/travelStore'
 import {
   COLOR_BACKGROUND,
@@ -60,6 +61,8 @@ function GlobeViewComponent({ onSelectCountry, selectedIso }: GlobeViewProps) {
   const [hovered, setHovered] = useState<CountryPolygon | null>(null)
 
   const visited = useVisitedCodes()
+  // I Paesi che hanno appena cambiato stato sfumano invece di scattare.
+  const { progressFor, version: transitionVersion } = useVisitedTransitions(visited)
   const hydrationStatus = useTravelStore((state) => state.status)
   const dataReady = hydrationStatus === 'ready'
 
@@ -89,7 +92,7 @@ function GlobeViewComponent({ onSelectCountry, selectedIso }: GlobeViewProps) {
         if (cancelled) return
         setGeo({
           status: 'error',
-          message: 'Impossibile caricare la mappa dei Paesi. Ricarica la pagina per riprovare.',
+          message: 'Could not load the country map. Reload the page to try again.',
         })
       })
 
@@ -106,13 +109,18 @@ function GlobeViewComponent({ onSelectCountry, selectedIso }: GlobeViewProps) {
   const highlightedIso = selectedIso ?? hovered?.iso ?? null
 
   const capColor = useCallback(
-    (polygon: object) =>
-      polygonCapColor({
-        iso: (polygon as CountryPolygon).iso,
+    (polygon: object) => {
+      const { iso } = polygon as CountryPolygon
+      return polygonCapColor({
+        iso,
         visited,
         hoveredIso: highlightedIso,
-      }),
-    [highlightedIso, visited],
+        ...(iso === null ? {} : { transition: progressFor(iso) }),
+      })
+    },
+    // `transitionVersion` cambia a ogni passo: serve a far riapplicare
+    // l'accessor mentre il colore sfuma.
+    [highlightedIso, progressFor, transitionVersion, visited],
   )
 
   const altitude = useCallback(
@@ -181,7 +189,7 @@ function GlobeViewComponent({ onSelectCountry, selectedIso }: GlobeViewProps) {
 
   const hint = useMemo(() => {
     if (geo.status === 'error') return geo.message
-    if (geo.status === 'loading' || !dataReady) return 'Caricamento della mappa…'
+    if (geo.status === 'loading' || !dataReady) return 'Loading the map…'
     return null
   }, [dataReady, geo])
 

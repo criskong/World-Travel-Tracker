@@ -5,9 +5,9 @@ export default function Statistics() {
   return (
     <PagePlaceholder
       icon={ChartColumn}
-      title="Statistiche"
-      description="Il quadro completo: copertura per continente, andamento nel tempo e primati personali."
-      phase="In arrivo nella fase 5"
+      title="Statistics"
+      description="The full picture: coverage by continent, how it grew over time, and personal records."
+      phase="Coming in phase 5"
     />
   )
 }

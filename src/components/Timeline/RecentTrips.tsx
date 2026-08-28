@@ -18,17 +18,17 @@ export function RecentTrips() {
   )
 
   return (
-    <section aria-label="Viaggi recenti" className="animate-fade-up">
+    <section aria-label="Recent trips" className="animate-fade-up">
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="text-xs font-medium uppercase tracking-wider text-slate-500">
-          Viaggi recenti
+          Recent trips
         </h2>
         {recent.length > 0 && (
           <Link
             to="/trips"
             className="flex items-center gap-0.5 text-xs text-slate-500 transition-colors hover:text-accent"
           >
-            Tutti i viaggi
+            All trips
             <ChevronRight size={13} aria-hidden />
           </Link>
         )}
@@ -40,8 +40,7 @@ export function RecentTrips() {
             <Plane size={16} strokeWidth={1.6} className="text-slate-600" aria-hidden />
           </div>
           <p className="text-sm leading-relaxed text-slate-500">
-            Nessun viaggio registrato. I viaggi con date, città e foto arrivano nella prossima
-            fase.
+            No trips recorded yet. Add one from a country’s details to see it here.
           </p>
         </div>
       ) : (

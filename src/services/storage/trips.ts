@@ -42,3 +42,12 @@ export async function clearVisits(): Promise<void> {
   const db = await openDatabase()
   await db.visits.clear()
 }
+
+/**
+ * Elimina tutti i viaggi di un Paese. Serve alla rimozione dello stato
+ * "visitato" con conferma (CLAUDE.md, "Decisioni prese").
+ */
+export async function removeVisitsForCountry(countryCode: string): Promise<number> {
+  const db = await openDatabase()
+  return db.visits.where('countryCode').equals(countryCode).delete()
+}

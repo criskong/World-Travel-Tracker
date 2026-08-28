@@ -11,10 +11,10 @@ export interface NavItem {
 
 /** Ordine unico di navigazione: sidebar desktop e bottom nav mobile lo condividono. */
 export const NAV_ITEMS: readonly NavItem[] = [
-  { to: '/', label: 'Home', description: 'Globo e riepilogo', icon: Compass },
-  { to: '/countries', label: 'Paesi', description: 'Elenco dei Paesi', icon: MapPinned },
-  { to: '/trips', label: 'Viaggi', description: 'I tuoi viaggi', icon: Plane },
-  { to: '/statistics', label: 'Statistiche', description: 'Numeri e grafici', icon: ChartColumn },
-  { to: '/achievements', label: 'Achievement', description: 'Obiettivi sbloccati', icon: Trophy },
-  { to: '/settings', label: 'Impostazioni', description: 'Dati e preferenze', icon: Settings },
+  { to: '/', label: 'Home', description: 'Globe and summary', icon: Compass },
+  { to: '/countries', label: 'Countries', description: 'Every country', icon: MapPinned },
+  { to: '/trips', label: 'Trips', description: 'Your trips', icon: Plane },
+  { to: '/statistics', label: 'Statistics', description: 'Numbers and charts', icon: ChartColumn },
+  { to: '/achievements', label: 'Achievements', description: 'Milestones unlocked', icon: Trophy },
+  { to: '/settings', label: 'Settings', description: 'Data and preferences', icon: Settings },
 ]

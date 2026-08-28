@@ -16,7 +16,7 @@ const NotFound = lazy(() => import('./pages/NotFound'))
 function RouteFallback() {
   return (
     <div className="flex min-h-full items-center justify-center py-16 text-sm text-slate-600">
-      Caricamento…
+      Loading…
     </div>
   )
 }
