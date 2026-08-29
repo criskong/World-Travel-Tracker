@@ -181,8 +181,72 @@ Due conseguenze da ricordare:
 
 **Via di riserva se il mobile soffrisse**: `mapshaper -simplify 40% keep-shapes`
 porta il file a 1,67 MB (0,51 gzip) e 41.194 vertici mantenendo tutte le 242
-feature. Non è stata adottata: un file derivato da rigenerare a mano a ogni
-aggiornamento del dataset non vale 0,46 MB di gzip risparmiati.
+feature. Non è stata adottata come file: un file derivato da rigenerare a mano
+a ogni aggiornamento del dataset non vale 0,46 MB di gzip risparmiati.
+Il mobile poi ha sofferto davvero, e la semplificazione è stata fatta **a
+runtime** — stessa densità, nessun file derivato. Vedi la decisione qui
+sotto.
+
+### Caricamento del globo: riduzione a runtime e comparsa progressiva (dopo la fase 4)
+
+Col 50m il globo su telefono ci metteva molto ad apparire e poi si bloccava.
+Profilo misurato del caricamento (desktop, dataset intero):
+
+| | |
+|---|---|
+| `JSON.parse` | 22 ms |
+| risoluzione ISO + riduzione | ~15 ms |
+| **costruzione delle mesh** | **~1.600 ms, in un unico blocco sincrono** |
+
+Il costo non sta nel parsing né nel numero di poligoni: sta in
+`ConicPolygonGeometry`, che three-globe costruisce **in modo sincrono** dentro
+l'update del layer, e che costa il **quadrato dei vertici per anello**.
+L'anello principale dell'Antartide, 2.805 vertici, da solo valeva ~890 ms —
+più della metà del mondo. Da qui due interventi indipendenti.
+
+**1. Riduzione della geometria a runtime** (`geometrySimplify.ts`).
+Douglas-Peucker con tolleranza `0,02°` (~2,2 km: il globo disegna ~40 km per
+pixel, quindi sotto il pixel alla vista di default), più un tetto di 800
+vertici per anello — sopra il tetto la tolleranza raddoppia finché l'anello
+non rientra. Il tetto serve al caso peggiore: un anello è indivisibile, quindi
+il più grande è il blocco più lungo che il thread principale non può spezzare.
+
+È la "via di riserva" già prevista qui sopra, applicata però a runtime: la
+densità che ne esce (40.139 vertici) è quella del mapshaper 40% (41.194), ma
+il dataset committato resta uno solo e la riduzione è codice con test. L'unica
+obiezione registrata contro mapshaper — il file derivato da rigenerare a mano —
+qui non esiste.
+
+Misurato: 99.613 → 40.139 vertici, anello più grande 4.574 → 799, costruzione
+mesh **1.613 → 334 ms**, costo della riduzione stessa 14 ms.
+
+**2. Comparsa progressiva** (`loadPlan.ts` + `useProgressiveReveal.ts`).
+I Paesi arrivano a `polygonsData` un gruppo per frame invece che tutti insieme:
+lo stesso lavoro totale diventa una sequenza di blocchi corti con un paint in
+mezzo, il globo resta girevole e i Paesi compaiono a ondate. 25 gruppi, il più
+lento 122 ms (l'Antartide, che è indivisibile).
+
+L'ordine è per area decrescente: prima i continenti, poi gli arcipelaghi,
+ultimi i micro-Stati. Una feature che da sola sfonda il budget prende un gruppo
+tutto suo ma **resta al suo posto nell'ordine**: spostare i giganti in coda
+proteggerebbe la fluidità al prezzo di veder comparire per ultimi Russia,
+Canada e Stati Uniti.
+
+Tre vincoli da non rompere:
+
+- La riduzione **non può far sparire nessuno**: il poligono più grande di ogni
+  feature non si scarta mai e nessun anello scende sotto il triangolo. Un test
+  verifica che tutti e 195 gli Stati ONU conservino la geometria — è il motivo
+  per cui siamo passati al 50m.
+- `dropTinyIslands` e `simplifyGeometry` restituiscono **lo stesso oggetto**
+  quando non cambiano niente, poligono per poligono: three-globe confronta
+  `coords` per identità e ricostruirebbe la mesh a ogni update.
+- `useProgressiveReveal` deve invece dare un **array nuovo** a ogni consegna:
+  react-kapsule riapplica una prop solo se ne cambia l'identità.
+
+Durante l'attesa si vede `GlobeLoader`: un aereo che percorre una rotta
+tratteggiata mentre l'arco pieno segna i Paesi già atterrati. Niente blur —
+sta sopra il canvas WebGL proprio nel momento in cui la CPU è più occupata.
 
 ### Archiviazione non disponibile (decisa in fase 2)
 

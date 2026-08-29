@@ -1,8 +1,9 @@
 import { getCountry } from './countries'
 import { GEOJSON_PUBLIC_PATH } from './dataset'
-import { countPolygons, dropTinyIslands, isCountryGeometry } from './geometrySimplify'
+import { countPolygons, countVertices, isCountryGeometry, reduceGeometry } from './geometrySimplify'
 import { featureDisplayName, resolveIso } from './isoResolver'
 import type { CountryFeature } from './isoResolver'
+import type { CountryGeometry } from './geometrySimplify'
 import type { Country } from '../../types'
 
 /** Percorso del dataset committato. Il nome del file vive in `dataset.ts`. */
@@ -36,7 +37,7 @@ function toPolygons(features: CountryFeature[]): CountryPolygon[] {
     // three-globe confronta `coords` per identità e ricostruirebbe la mesh a
     // ogni update se cambiasse.
     const geometry = isCountryGeometry(feature.geometry)
-      ? dropTinyIslands(feature.geometry)
+      ? reduceGeometry(feature.geometry)
       : feature.geometry
 
     return {
@@ -50,11 +51,11 @@ function toPolygons(features: CountryFeature[]): CountryPolygon[] {
   })
 }
 
-/** Poligoni totali passati a three-globe: una mesh a testa. */
-function countMeshes(polygons: CountryPolygon[]): number {
+/** Somma una misura della geometria su tutti i poligoni. */
+function sumGeometry(polygons: CountryPolygon[], measure: (g: CountryGeometry) => number): number {
   return polygons.reduce(
     (total, polygon) =>
-      total + (isCountryGeometry(polygon.feature.geometry) ? countPolygons(polygon.feature.geometry) : 0),
+      total + (isCountryGeometry(polygon.feature.geometry) ? measure(polygon.feature.geometry) : 0),
     0,
   )
 }
@@ -93,7 +94,7 @@ export function loadCountryPolygons(): Promise<CountryPolygon[]> {
             `%c[geojson] ${GEOJSON_URL.split('/').pop()}`,
             'color:#38bdf8',
             `${(body.length / 1024).toFixed(0)} KB · ${data.features.length} feature · ` +
-              `${countMeshes(polygons)} mesh (${countMeshes(polygons) * 2} draw call)\n` +
+              `${sumGeometry(polygons, countPolygons)} mesh · ${sumGeometry(polygons, countVertices)} vertici\n` +
               `  fetch   ${ms(startedAt, fetchedAt)}\n` +
               `  parse   ${ms(fetchedAt, parsedAt)}\n` +
               `  resolve ${ms(parsedAt, resolvedAt)}\n` +

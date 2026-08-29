@@ -32,6 +32,9 @@ import { GEOJSON_FILENAME } from '../../data/countries/dataset'
 
 const spy = vi.hoisted(() => ({ props: null as Record<string, unknown> | null }))
 
+/** Letto dal dataset committato in `beforeAll`, non scritto a mano. */
+let featureCount = 0
+
 vi.mock('react-globe.gl', () => ({
   default: (props: Record<string, unknown>) => {
     spy.props = props
@@ -155,6 +158,7 @@ beforeAll(() => {
   // Stesso corpo che serve il dev server, letto dal file committato.
   // Il nome arriva da `dataset.ts`: il doppio serve il dataset vero dell'app.
   const body = readFileSync(resolve(process.cwd(), 'public/data', GEOJSON_FILENAME), 'utf8')
+  featureCount = (JSON.parse(body) as { features: unknown[] }).features.length
   globalThis.fetch = vi.fn(
     async () =>
       ({
@@ -193,9 +197,15 @@ async function mountGlobe(selectedIso: string | null = null) {
   const selected: string[] = []
   render(<GlobeView onSelectCountry={(iso) => selected.push(iso)} selectedIso={selectedIso} />)
 
-  await waitFor(() => {
-    expect(Array.isArray(spy.props?.polygonsData)).toBe(true)
-  })
+  // Il globo riceve i Paesi a gruppi, un frame per gruppo: il contratto va
+  // verificato sull'insieme completo, quindi si aspetta la fine della
+  // rivelazione. L'attesa è anche la prova che la rivelazione arriva in fondo.
+  await waitFor(
+    () => {
+      expect((spy.props?.polygonsData as unknown[] | undefined)?.length).toBe(featureCount)
+    },
+    { timeout: 5000 },
+  )
 
   const props = spy.props as Record<string, unknown>
   return { props, polygons: props.polygonsData as CountryPolygon[], selected }

@@ -34,11 +34,17 @@ function renderPage() {
   )
 }
 
-/** Le righe della lista, escluse quelle del drawer dei dettagli. */
+/**
+ * Le righe della lista, escluse quelle del drawer dei dettagli.
+ *
+ * Query DOM e non `getAllByRole`: le righe sono 250 e questa funzione gira
+ * dentro `waitFor`, che la richiama ogni 50 ms. Con una query per ruolo per
+ * ogni riga il solo costo delle query portava il test al timeout. Le righe
+ * sono `<li>` e `<button>` veri, quindi il ruolo implicito è lo stesso.
+ */
 function rowNames(): string[] {
-  return screen
-    .getAllByRole('listitem')
-    .map((item) => within(item).queryByRole('button')?.textContent ?? '')
+  return [...document.querySelectorAll('li')]
+    .map((item) => item.querySelector('button')?.textContent ?? '')
     .filter((text) => text.length > 0)
 }
 
@@ -79,7 +85,10 @@ describe('Countries', () => {
   it('filtra per continente e si combina con la ricerca', async () => {
     renderPage()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Oceania' }))
+    // Scoped al gruppo dei filtri: `getByRole('button')` sull'intera pagina
+    // calcolerebbe il nome accessibile di tutti i 250 bottoni delle righe.
+    const continents = screen.getByRole('group', { name: 'Filter by continent' })
+    fireEvent.click(within(continents).getByRole('button', { name: 'Oceania' }))
     await waitFor(() => {
       expect(rowNames().some((name) => name.includes('Fiji'))).toBe(true)
       expect(rowNames().some((name) => name.includes('Italy'))).toBe(false)

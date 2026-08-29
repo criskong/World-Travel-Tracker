@@ -4,7 +4,9 @@ import { Color, MeshPhongMaterial } from 'three'
 import { loadCountryPolygons } from '../../data/countries/geoData'
 import type { CountryPolygon } from '../../data/countries/geoData'
 import { logGeoDiagnostics } from '../../utils/geoDiagnostics'
+import { GlobeLoader } from './GlobeLoader'
 import { useElementSize } from '../../hooks/useElementSize'
+import { useProgressiveReveal } from '../../hooks/useProgressiveReveal'
 import { useVisitedCodes } from '../../hooks/useVisitedCodes'
 import { useVisitedTransitions } from '../../hooks/useVisitedTransitions'
 import { useTravelStore } from '../../store/travelStore'
@@ -112,6 +114,21 @@ function GlobeViewComponent({ onSelectCountry, selectedIso }: GlobeViewProps) {
   // così non si vede un lampeggio da "tutto grigio" a "colorato".
   const polygons = geo.status === 'ready' && dataReady ? geo.polygons : undefined
 
+  // ...e ci entrano a ondate, non tutti in una volta: three-globe costruisce
+  // le mesh in modo sincrono e il dataset intero bloccherebbe il thread.
+  const reveal = useProgressiveReveal(polygons)
+
+  // Quanto ci mette il globo a essere completo, dal montaggio. È il numero
+  // che l'utente percepisce davvero, e servirà di nuovo alla fase 6.
+  const mountedAtRef = useRef(performance.now())
+  useEffect(() => {
+    if (!import.meta.env.DEV || !reveal.complete) return
+    console.log(
+      `%c[globe] ${reveal.total} Paesi sul globo dopo ${(performance.now() - mountedAtRef.current).toFixed(0)} ms dal mount`,
+      'color:#38bdf8',
+    )
+  }, [reveal.complete, reveal.total])
+
   // L'evidenziazione segue la selezione quando c'è, altrimenti il puntatore.
   const highlightedIso = selectedIso ?? hovered?.iso ?? null
 
@@ -194,11 +211,12 @@ function GlobeViewComponent({ onSelectCountry, selectedIso }: GlobeViewProps) {
     [],
   )
 
-  const hint = useMemo(() => {
-    if (geo.status === 'error') return geo.message
-    if (geo.status === 'loading' || !dataReady) return 'Loading the map…'
+  const loading = useMemo(() => {
+    if (geo.status === 'error') return null
+    if (geo.status === 'loading' || !dataReady) return { phase: 'downloading' } as const
+    if (!reveal.complete) return { phase: 'placing' } as const
     return null
-  }, [dataReady, geo])
+  }, [dataReady, geo.status, reveal.complete])
 
   return (
     <div ref={containerRef} className="relative h-full w-full overflow-hidden bg-base-900">
@@ -212,7 +230,7 @@ function GlobeViewComponent({ onSelectCountry, selectedIso }: GlobeViewProps) {
           atmosphereColor="#38bdf8"
           atmosphereAltitude={0.18}
           globeMaterial={globeMaterial}
-          polygonsData={polygons}
+          polygonsData={reveal.visible}
           polygonGeoJsonGeometry={geoJsonGeometry}
           polygonCapColor={capColor}
           polygonSideColor={sideColor}
@@ -226,17 +244,22 @@ function GlobeViewComponent({ onSelectCountry, selectedIso }: GlobeViewProps) {
         />
       )}
 
-      {hint !== null && (
+      {loading !== null && (
+        <GlobeLoader
+          phase={loading.phase}
+          progress={reveal.progress}
+          revealed={reveal.revealed}
+          total={reveal.total}
+        />
+      )}
+
+      {geo.status === 'error' && (
         <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center p-5">
           <p
             aria-live="polite"
-            className={`rounded-full border px-4 py-2 text-sm ${
-              geo.status === 'error'
-                ? 'border-red-500/40 bg-red-950/70 text-red-200'
-                : 'border-edge bg-black/50 text-slate-400'
-            }`}
+            className="rounded-full border border-red-500/40 bg-red-950/70 px-4 py-2 text-sm text-red-200"
           >
-            {hint}
+            {geo.message}
           </p>
         </div>
       )}

@@ -120,7 +120,7 @@ export default function Countries() {
           ))}
         </div>
 
-        <div className="flex flex-wrap gap-1.5">
+        <div role="group" aria-label="Filter by continent" className="flex flex-wrap gap-1.5">
           <ContinentChip
             label="All continents"
             active={filters.continent === null}
