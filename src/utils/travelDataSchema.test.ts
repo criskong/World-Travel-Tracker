@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isValidVisitDate, parseTravelData } from './travelDataSchema'
+import { isValidVisitDate, parseTravelData, parseTravelDataJson } from './travelDataSchema'
 
 describe('isValidVisitDate', () => {
   it('accetta una data reale in formato AAAA-MM-GG', () => {
@@ -123,5 +123,93 @@ describe('parseTravelData', () => {
       city: 'Paris',
       photoId: 'p1',
     })
+  })
+})
+
+describe('parseTravelDataJson', () => {
+  const valid = JSON.stringify({
+    formatVersion: 1,
+    exportedAt: '2024-05-01T10:00:00.000Z',
+    manuallyMarked: ['it', 'JP'],
+    visits: [{ id: 'v1', countryCode: 'FR', date: '2024-04-02' }],
+  })
+
+  it('accetta un backup vero e proprio', () => {
+    const result = parseTravelDataJson(valid)
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data.manuallyMarked).toEqual(['IT', 'JP'])
+    expect(result.data.visits).toHaveLength(1)
+  })
+
+  it.each([
+    ['stringa vuota', ''],
+    ['solo spazi', '   '],
+    ['graffa non chiusa', '{"manuallyMarked": ['],
+    ['virgola di troppo', '{"manuallyMarked": [],}'],
+    ['apici singoli', "{'manuallyMarked': []}"],
+    ['non e JSON', 'questo non e un file di backup'],
+    ['HTML', '<!doctype html><html><body>404</body></html>'],
+    ['un binario travestito', '\u0000\u0001\u0002'],
+  ])('rifiuta un file malformato: %s', (_label, text) => {
+    const result = parseTravelDataJson(text)
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.errors).toHaveLength(1)
+    // Messaggio per un essere umano, mai il testo dell'eccezione.
+    expect(result.errors[0]).toContain('not valid JSON')
+    expect(result.errors[0]).not.toMatch(/JSON\.parse|Unexpected token|SyntaxError/)
+  })
+
+  it.each([
+    ['un numero', '42'],
+    ['una stringa', '"ciao"'],
+    ['null', 'null'],
+    ['un array', '[]'],
+  ])('rifiuta un JSON valido che non e un backup: %s', (_label, text) => {
+    const result = parseTravelDataJson(text)
+    expect(result.ok).toBe(false)
+  })
+
+  it('rifiuta un formato piu recente di quello che sa leggere', () => {
+    const result = parseTravelDataJson(
+      JSON.stringify({ formatVersion: 99, manuallyMarked: [], visits: [] }),
+    )
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.errors[0]).toContain('newer version')
+  })
+
+  it('accetta un backup senza campo di versione: e il formato 1', () => {
+    const result = parseTravelDataJson(JSON.stringify({ manuallyMarked: ['IT'], visits: [] }))
+    expect(result.ok).toBe(true)
+  })
+
+  it('scarta i codici ISO inesistenti e lo dice', () => {
+    const result = parseTravelDataJson(
+      JSON.stringify({
+        formatVersion: 1,
+        manuallyMarked: ['IT', 'XX', 'ZZ', 'Atlantide'],
+        visits: [
+          { id: 'v1', countryCode: 'QQ', date: '2024-01-01' },
+          { id: 'v2', countryCode: 'JP', date: '2024-01-02' },
+        ],
+      }),
+    )
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data.manuallyMarked).toEqual(['IT'])
+    expect(result.data.visits.map((visit) => visit.countryCode)).toEqual(['JP'])
+    expect(result.warnings.join(' ')).toContain('unknown ISO code')
+    expect(result.warnings.join(' ')).toContain('skipped')
+  })
+
+  it('un file di un altra app non passa', () => {
+    const result = parseTravelDataJson(
+      JSON.stringify({ version: '2.0', places: [{ name: 'Rome' }] }),
+    )
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.errors.join(' ')).toContain('manuallyMarked')
   })
 })

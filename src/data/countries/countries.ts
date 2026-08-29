@@ -297,7 +297,7 @@ export const TOTAL_COUNTRIES = COUNTRIES.length
  * Anche questo elenco è dati, non un numero magico: il 195 si ricava dalla
  * lunghezza, e un test verifica che ogni codice esista in `COUNTRIES`.
  */
-const UN_MEMBER_LIST: readonly string[] = [
+export const UN_MEMBER_LIST: readonly string[] = [
   // Africa (54)
   'DZ', 'AO', 'BJ', 'BW', 'BF', 'BI', 'CV', 'CM', 'CF', 'TD', 'KM', 'CG', 'CD',
   'CI', 'DJ', 'EG', 'GQ', 'ER', 'SZ', 'ET', 'GA', 'GM', 'GH', 'GN', 'GW', 'KE',

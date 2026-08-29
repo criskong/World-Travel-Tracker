@@ -1,9 +1,10 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { computeStats, recentVisits } from './stats'
+import { computeStats, recentVisits, unvisitedByContinent, visitsPerYear } from './stats'
 import {
   COUNTRIES,
+  COUNTRIES_BY_CONTINENT,
   TOTAL_COUNTRIES,
   TOTAL_UN_MEMBERS,
   UN_MEMBER_CODES,
@@ -159,5 +160,136 @@ describe('recentVisits', () => {
 
   it('restituisce un elenco vuoto senza viaggi', () => {
     expect(recentVisits(empty)).toEqual([])
+  })
+})
+
+describe('unvisitedByContinent', () => {
+  it('al primo avvio manca tutto: la somma fa 195', () => {
+    const backlog = unvisitedByContinent(empty)
+    const missing = backlog.reduce((total, item) => total + item.missing.length, 0)
+    expect(missing).toBe(TOTAL_UN_MEMBERS)
+  })
+
+  it('esclude i territori dai mancanti', () => {
+    const codes = unvisitedByContinent(empty).flatMap((item) =>
+      item.missing.map((country) => country.code),
+    )
+    expect(codes.every((code) => isUnMember(code))).toBe(true)
+    expect(codes).not.toContain('GL')
+    expect(codes).not.toContain('PR')
+  })
+
+  it('non elenca un Paese gia visitato', () => {
+    const backlog = unvisitedByContinent({ manuallyMarked: ['JP'], visits: [] })
+    const asia = backlog.find((item) => item.continent === 'Asia')
+    expect(asia?.missing.some((country) => country.code === 'JP')).toBe(false)
+    expect(asia?.visited).toBe(1)
+  })
+
+  it('conta come visitato anche chi ha solo un viaggio', () => {
+    const backlog = unvisitedByContinent({
+      manuallyMarked: [],
+      visits: [visit({ countryCode: 'IT' })],
+    })
+    const europe = backlog.find((item) => item.continent === 'Europe')
+    expect(europe?.missing.some((country) => country.code === 'IT')).toBe(false)
+  })
+
+  it('un territorio visitato non riduce i mancanti', () => {
+    const before = unvisitedByContinent(empty)
+    const after = unvisitedByContinent({ manuallyMarked: ['GL'], visits: [] })
+    expect(after.map((item) => item.missing.length)).toEqual(
+      before.map((item) => item.missing.length),
+    )
+  })
+
+  it('non include continenti senza Stati ONU', () => {
+    expect(unvisitedByContinent(empty).map((item) => item.continent)).not.toContain('Antarctica')
+  })
+
+  it('mette per primo il continente piu vicino al completamento', () => {
+    const oceania = (COUNTRIES_BY_CONTINENT.Oceania ?? []).filter((country) =>
+      UN_MEMBER_CODES.has(country.code),
+    )
+    const data: TravelData = {
+      manuallyMarked: oceania.slice(0, -1).map((country) => country.code),
+      visits: [],
+    }
+    const backlog = unvisitedByContinent(data)
+    expect(backlog[0]?.continent).toBe('Oceania')
+    expect(backlog[0]?.missing).toHaveLength(1)
+  })
+
+  it('ordina i mancanti per nome', () => {
+    const africa = unvisitedByContinent(empty).find((item) => item.continent === 'Africa')
+    const names = africa?.missing.map((country) => country.name) ?? []
+    expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b)))
+  })
+
+  it('visited piu missing fa sempre il totale del continente', () => {
+    for (const item of unvisitedByContinent({ manuallyMarked: ['JP', 'IT', 'FR'], visits: [] })) {
+      expect(item.visited + item.missing.length).toBe(item.total)
+    }
+  })
+})
+
+describe('visitsPerYear', () => {
+  it('senza viaggi non c e distribuzione', () => {
+    expect(visitsPerYear(empty)).toEqual([])
+  })
+
+  it('conta i viaggi di ogni anno', () => {
+    const data: TravelData = {
+      manuallyMarked: [],
+      visits: [
+        visit({ id: 'a', date: '2023-01-10' }),
+        visit({ id: 'b', date: '2023-08-02' }),
+        visit({ id: 'c', date: '2024-03-30' }),
+      ],
+    }
+    expect(visitsPerYear(data)).toEqual([
+      { year: 2023, count: 2 },
+      { year: 2024, count: 1 },
+    ])
+  })
+
+  it('riempie di zeri gli anni vuoti dentro l intervallo', () => {
+    const data: TravelData = {
+      manuallyMarked: [],
+      visits: [visit({ id: 'a', date: '2020-06-01' }), visit({ id: 'b', date: '2023-06-01' })],
+    }
+    expect(visitsPerYear(data)).toEqual([
+      { year: 2020, count: 1 },
+      { year: 2021, count: 0 },
+      { year: 2022, count: 0 },
+      { year: 2023, count: 1 },
+    ])
+  })
+
+  it('parte dal piu vecchio anche se i viaggi sono in disordine', () => {
+    const data: TravelData = {
+      manuallyMarked: [],
+      visits: [visit({ id: 'a', date: '2024-01-01' }), visit({ id: 'b', date: '2022-01-01' })],
+    }
+    expect(visitsPerYear(data).map((item) => item.year)).toEqual([2022, 2023, 2024])
+  })
+
+  it('un solo anno da un solo elemento', () => {
+    const data: TravelData = { manuallyMarked: [], visits: [visit({ date: '2024-05-01' })] }
+    expect(visitsPerYear(data)).toEqual([{ year: 2024, count: 1 }])
+  })
+
+  it('la somma dei conteggi e il numero di viaggi', () => {
+    const data: TravelData = {
+      manuallyMarked: [],
+      visits: [
+        visit({ id: 'a', date: '2019-01-01' }),
+        visit({ id: 'b', date: '2021-01-01' }),
+        visit({ id: 'c', date: '2021-07-01' }),
+        visit({ id: 'd', date: '2024-01-01' }),
+      ],
+    }
+    const total = visitsPerYear(data).reduce((sum, item) => sum + item.count, 0)
+    expect(total).toBe(data.visits.length)
   })
 })

@@ -248,6 +248,43 @@ Durante l'attesa si vede `GlobeLoader`: un aereo che percorre una rotta
 tratteggiata mentre l'arco pieno segna i Paesi già atterrati. Niente blur —
 sta sopra il canvas WebGL proprio nel momento in cui la CPU è più occupata.
 
+### Achievement e gestione dei dati (decise in fase 5)
+
+**I territori non contano per gli achievement.** Le soglie — First Step 1,
+Explorer 10, Travel Addict 25, World Traveler 50, Globe Trotter 100, World
+Explorer 195 — guardano solo `UN_MEMBER_LIST`, e anche Continent Master
+considera completo un continente quando sono visitati tutti i suoi Stati ONU.
+Il motivo: il denominatore mostrato ovunque è 195, e far contare Groenlandia o
+Porto Rico renderebbe "50 / 195" e "World Traveler a 50" due numeri che si
+contraddicono sulla stessa schermata. I territori visitati restano contati a
+parte, come in Home: non spariscono, non fanno avanzare le medaglie.
+
+Corollario: `COUNTRIES_BY_CONTINENT` include i territori, quindi ogni conteggio
+per continente va filtrato su `UN_MEMBER_CODES`. Un test verifica che la somma
+dei totali per continente faccia esattamente 195; se qualcuno togliesse il
+filtro, quel test cade.
+
+**Gli achievement non si persistono mai.** Sono stato derivato come
+`isVisited`: `computeAchievements` li ricalcola a ogni render. Effetto voluto e
+gratuito: importare un backup rimette a posto anche le medaglie.
+
+**L'import SOSTITUISCE, non fonde.** Un backup è la fotografia di uno stato, e
+ripristinarlo deve restituire esattamente quello stato; una fusione lascerebbe
+in giro voci che l'utente aveva cancellato, senza modo di tornare indietro. La
+UI lo dice due volte prima che succeda: un avviso sopra il selettore del file,
+e la modal di conferma che elenca cosa arriva e cosa va perso.
+
+**La validazione precede qualunque scrittura.** `parseTravelDataJson` (puro,
+non tocca il database) prende il testo del file e decide; solo se passa si
+apre la conferma, e solo dopo la conferma si scrive. Un file non valido lascia
+i dati esistenti intatti perché non si è mai arrivati a toccarli, non perché
+si fa rollback.
+
+**Le foto non entrano nel backup**, e la UI lo dice PRIMA del bottone di
+export, non dopo il download. Restano `Blob` in IndexedDB: un JSON con le
+immagini in base64 sarebbe enorme e violerebbe il vincolo "mai base64".
+Per contro `resetData` le cancella insieme al resto: nessun Blob orfano.
+
 ### Archiviazione non disponibile (decisa in fase 2)
 
 Quando IndexedDB non è utilizzabile (Safari in navigazione privata) l'app non

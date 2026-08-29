@@ -138,3 +138,26 @@ export function parseTravelData(input: unknown): TravelDataValidationResult {
     warnings,
   }
 }
+
+/**
+ * Punto di ingresso per un file scelto dall'utente: testo grezzo in entrata,
+ * esito già validato in uscita.
+ *
+ * Serve perché un file può fallire in due modi diversi che l'utente vive allo
+ * stesso modo — non è JSON, oppure è JSON ma non è un backup di questa app — e
+ * in entrambi i casi la risposta deve essere un messaggio comprensibile, non
+ * un'eccezione. Nessuna scrittura avviene qui: chi chiama scrive solo se
+ * `ok` è `true`.
+ */
+export function parseTravelDataJson(text: string): TravelDataValidationResult {
+  let raw: unknown
+  try {
+    raw = JSON.parse(text)
+  } catch {
+    return {
+      ok: false,
+      errors: ['This file is not valid JSON. Pick a backup exported from this app.'],
+    }
+  }
+  return parseTravelData(raw)
+}

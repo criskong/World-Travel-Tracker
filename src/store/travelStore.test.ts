@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { useTravelStore } from './travelStore'
 import { isVisited, visitsForCountry } from './selectors'
 import { closeDatabase } from '../services/storage/db'
+import { loadPhoto } from '../services/storage'
 import type { TravelData } from '../types'
 
 /**
@@ -223,6 +224,28 @@ describe('resetData', () => {
 
     await simulateReload()
     expect(data()).toEqual({ manuallyMarked: [], visits: [] })
+  })
+
+  /**
+   * Le foto vivono in una tabella separata, referenziate da `photoId`.
+   * Svuotare marcatori e viaggi senza svuotare quella lascerebbe dei Blob
+   * irraggiungibili a occupare la quota di IndexedDB per sempre.
+   */
+  it('cancella anche le foto: nessun Blob orfano resta in IndexedDB', async () => {
+    const photo = new Blob(['x'.repeat(128)], { type: 'image/jpeg' })
+    const visit = await useTravelStore
+      .getState()
+      .addVisit({ countryCode: 'JP', date: '2024-05-01' }, photo)
+
+    const photoId = visit?.photoId
+    expect(photoId).toBeDefined()
+    expect(await loadPhoto(photoId!)).toBeDefined()
+
+    await useTravelStore.getState().resetData()
+
+    expect(await loadPhoto(photoId!)).toBeUndefined()
+    await simulateReload()
+    expect(await loadPhoto(photoId!)).toBeUndefined()
   })
 })
 

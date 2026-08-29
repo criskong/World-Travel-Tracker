@@ -1,5 +1,6 @@
 import {
   COUNTRIES,
+  COUNTRIES_BY_CONTINENT,
   TOTAL_UN_MEMBERS,
   UN_MEMBER_CODES,
   getCountry,
@@ -118,4 +119,77 @@ export function recentVisits(data: TravelData, limit = 5): RecentVisit[] {
     .sort((a, b) => b.date.localeCompare(a.date) || a.id.localeCompare(b.id))
     .slice(0, limit)
     .map((visit) => ({ visit, country: getCountry(visit.countryCode) }))
+}
+
+export interface ContinentBacklog {
+  continent: Continent
+  /** Stati ONU di quel continente non ancora visitati, in ordine alfabetico. */
+  missing: Country[]
+  visited: number
+  total: number
+}
+
+/**
+ * Quello che resta da vedere, continente per continente.
+ *
+ * Solo Stati ONU: è lo stesso insieme del denominatore 195. I territori
+ * restano fuori — non fanno parte del conto e metterli in una lista di
+ * "mancanti" suggerirebbe il contrario.
+ *
+ * Ordinati per quanti ne mancano, dal continente più vicino al completamento:
+ * è l'ordine utile a chi sta decidendo dove andare.
+ */
+export function unvisitedByContinent(data: TravelData): ContinentBacklog[] {
+  const visited = buildVisitedSet(data)
+
+  return CONTINENTS.map((continent) => {
+    const countries = (COUNTRIES_BY_CONTINENT[continent] ?? []).filter((country) =>
+      UN_MEMBER_CODES.has(country.code),
+    )
+    const missing = countries
+      .filter((country) => !visited.has(country.code))
+      .sort((a, b) => a.name.localeCompare(b.name))
+    return {
+      continent,
+      missing,
+      visited: countries.length - missing.length,
+      total: countries.length,
+    }
+  })
+    .filter((backlog) => backlog.total > 0)
+    .sort(
+      (a, b) => a.missing.length - b.missing.length || a.continent.localeCompare(b.continent),
+    )
+}
+
+export interface YearCount {
+  year: number
+  count: number
+}
+
+/**
+ * Distribuzione dei viaggi per anno, dal più vecchio al più recente.
+ *
+ * Gli anni senza viaggi che cadono dentro l'intervallo ci sono lo stesso, con
+ * zero: una distribuzione che salta gli anni vuoti fa sembrare continuo un
+ * andamento che continuo non è.
+ */
+export function visitsPerYear(data: TravelData): YearCount[] {
+  const counts = new Map<number, number>()
+  for (const visit of data.visits) {
+    const year = Number.parseInt(visit.date.slice(0, 4), 10)
+    if (!Number.isInteger(year)) continue
+    counts.set(year, (counts.get(year) ?? 0) + 1)
+  }
+  if (counts.size === 0) return []
+
+  const years = [...counts.keys()]
+  const first = Math.min(...years)
+  const last = Math.max(...years)
+
+  const distribution: YearCount[] = []
+  for (let year = first; year <= last; year += 1) {
+    distribution.push({ year, count: counts.get(year) ?? 0 })
+  }
+  return distribution
 }
