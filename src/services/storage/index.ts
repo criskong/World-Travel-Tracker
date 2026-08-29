@@ -28,3 +28,11 @@ export { savePhoto, loadPhoto, removePhoto, removeOrphanPhotos, clearPhotos } fr
 
 export { requestPersistentStorage } from './persistence'
 export type { PersistenceResult } from './persistence'
+
+export {
+  readCachedDataset,
+  writeCachedDataset,
+  pruneCachedDatasets,
+  cachedDatasetSize,
+  clearCachedDatasets,
+} from './geoDataset'

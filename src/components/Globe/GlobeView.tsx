@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import Globe from 'react-globe.gl'
 import { Color, MeshPhongMaterial } from 'three'
 import { loadCountryPolygons } from '../../data/countries/geoData'
@@ -6,6 +6,7 @@ import type { CountryPolygon } from '../../data/countries/geoData'
 import { logGeoDiagnostics } from '../../utils/geoDiagnostics'
 import { GlobeLoader } from './GlobeLoader'
 import { useElementSize } from '../../hooks/useElementSize'
+import { useDelayedFlag } from '../../hooks/useDelayedFlag'
 import { useProgressiveReveal } from '../../hooks/useProgressiveReveal'
 import { useVisitedCodes } from '../../hooks/useVisitedCodes'
 import { useVisitedTransitions } from '../../hooks/useVisitedTransitions'
@@ -211,12 +212,15 @@ function GlobeViewComponent({ onSelectCountry, selectedIso }: GlobeViewProps) {
     [],
   )
 
-  const loading = useMemo(() => {
-    if (geo.status === 'error') return null
-    if (geo.status === 'loading' || !dataReady) return { phase: 'downloading' } as const
-    if (!reveal.complete) return { phase: 'placing' } as const
-    return null
-  }, [dataReady, geo.status, reveal.complete])
+  /**
+   * Il pannello di attesa si vede solo finché il globo è vuoto. Da quando i
+   * primi Paesi compaiono in poi, l'indicatore di avanzamento è il globo
+   * stesso che prende forma: due alla volta erano uno di troppo.
+   *
+   * Il ritardo evita il lampeggio quando il dataset arriva dalla cache.
+   */
+  const waiting = geo.status === 'loading' || !dataReady
+  const showLoader = useDelayedFlag(waiting)
 
   return (
     <div ref={containerRef} className="relative h-full w-full overflow-hidden bg-base-900">
@@ -244,14 +248,7 @@ function GlobeViewComponent({ onSelectCountry, selectedIso }: GlobeViewProps) {
         />
       )}
 
-      {loading !== null && (
-        <GlobeLoader
-          phase={loading.phase}
-          progress={reveal.progress}
-          revealed={reveal.revealed}
-          total={reveal.total}
-        />
-      )}
+      {showLoader && <GlobeLoader />}
 
       {geo.status === 'error' && (
         <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center p-5">

@@ -29,10 +29,26 @@ export interface PhotoRow {
   createdAt: string
 }
 
+/**
+ * Copia locale del dataset geografico, per non riscaricarlo a ogni avvio.
+ *
+ * Non sono dati dell'utente: è contenuto dell'app messo da parte. Per questo
+ * `resetData` non lo tocca — cancellarlo costringerebbe a riscaricare 3 MB
+ * per aver chiesto di dimenticare i propri viaggi.
+ */
+export interface DatasetRow {
+  /** Nome del file del dataset. Cambia il file, cambia la chiave. */
+  key: string
+  text: string
+  bytes: number
+  cachedAt: string
+}
+
 export class TravelDatabase extends Dexie {
   manuallyMarked!: Table<MarkedCountryRow, string>
   visits!: Table<VisitRow, string>
   photos!: Table<PhotoRow, string>
+  datasets!: Table<DatasetRow, string>
 
   constructor() {
     super(DATABASE_NAME)
@@ -43,6 +59,12 @@ export class TravelDatabase extends Dexie {
       manuallyMarked: '&code, markedAt',
       visits: '&id, countryCode, date',
       photos: '&id, createdAt',
+    })
+
+    // v2: cache del dataset geografico. Dexie applica un diff, quindi qui
+    // compare solo la tabella nuova; le tre di prima restano come sono.
+    this.version(2).stores({
+      datasets: '&key',
     })
   }
 }

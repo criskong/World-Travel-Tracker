@@ -244,9 +244,44 @@ Tre vincoli da non rompere:
 - `useProgressiveReveal` deve invece dare un **array nuovo** a ogni consegna:
   react-kapsule riapplica una prop solo se ne cambia l'identità.
 
-Durante l'attesa si vede `GlobeLoader`: un aereo che percorre una rotta
-tratteggiata mentre l'arco pieno segna i Paesi già atterrati. Niente blur —
-sta sopra il canvas WebGL proprio nel momento in cui la CPU è più occupata.
+**3. Un solo indicatore per volta.** `GlobeLoader` — un aereo che percorre una
+rotta tratteggiata — si vede SOLO finché il globo è vuoto. Appena i primi
+Paesi atterrano, sparisce: da lì in poi è il mappamondo che prende forma a
+dire che sta caricando. Un contatore "142 / 242" davanti ai continenti che
+compaiono era un secondo indicatore della stessa cosa. Il pannello ha anche un
+ritardo di 200 ms (`useDelayedFlag`), perché con il dataset in cache l'attesa
+finisce in pochi millisecondi e un pannello che lampeggia si nota più di uno
+che non compare. Niente blur: sta sopra il canvas WebGL nel momento in cui la
+CPU è più occupata.
+
+**4. Copia locale del dataset** (`services/storage/geoDataset.ts`, tabella
+Dexie `datasets`, schema v2). Il GeoJSON non cambia mai fra un avvio e
+l'altro: riscaricarlo a ogni apertura era la parte più lenta del caricamento e,
+su rete mobile, l'unica che costa davvero. La chiave è il nome del file, quindi
+cambiare dataset invalida la cache da sé, senza versioni da ricordarsi di
+alzare; all'avvio successivo la copia vecchia viene buttata.
+
+Tre proprietà che i test verificano una per una:
+
+- **È una cache, non una fonte di verità.** Nessuna di quelle funzioni lancia
+  mai: senza storage restituiscono `null` o `false` e l'app riscarica come
+  prima. Un'ottimizzazione non può impedire al globo di comparire.
+- **Una copia corrotta si butta e si riscarica.** Senza questa via d'uscita
+  una cache rovinata renderebbe l'app inutilizzabile per sempre, e l'utente
+  non avrebbe modo né di accorgersene né di rimediare.
+- **La scrittura è rimandata a thread libero** (`requestIdleCallback`).
+  Scrivere 3 MB su IndexedDB mentre three-globe costruisce le mesh vorrebbe
+  dire contendersi lo stesso thread nel momento peggiore.
+
+`resetData` NON la tocca: non sono dati dell'utente, è contenuto dell'app.
+Cancellarla costringerebbe a riscaricare 3 MB per aver chiesto di dimenticare
+i propri viaggi.
+
+Resta fuori dalla portata della cache il costo che nessun archivio elimina:
+la **costruzione delle mesh**, ~334 ms su desktop, perché è geometria WebGL e
+va ricostruita a ogni avvio. In fase 6 andrà aggiunto anche l'header
+`Cache-Control: immutable` su `/data/*.geojson`, che è la stessa cosa fatta
+dal lato HTTP.
 
 ### Achievement e gestione dei dati (decise in fase 5)
 
