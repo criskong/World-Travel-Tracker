@@ -9,8 +9,6 @@ export interface ProgressiveReveal {
   revealed: number
   /** Quanti saranno in tutto. */
   total: number
-  /** Da 0 a 1. */
-  progress: number
   complete: boolean
 }
 
@@ -95,7 +93,6 @@ export function useProgressiveReveal(
     visible,
     revealed,
     total,
-    progress: total === 0 ? 0 : revealed / total,
     complete: total > 0 && revealed >= total,
   }
 }

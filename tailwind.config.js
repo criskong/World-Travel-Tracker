@@ -53,17 +53,11 @@ export default {
           from: { opacity: '0', transform: 'translateY(12px)' },
           to: { opacity: '1', transform: 'translateY(0)' },
         },
-        // L'aereo che percorre la rotta nel pannello di caricamento del globo.
-        orbit: {
-          from: { transform: 'rotate(0deg)' },
-          to: { transform: 'rotate(360deg)' },
-        },
       },
       animation: {
         'fade-up': 'fade-up 240ms cubic-bezier(0.16, 1, 0.3, 1) both',
         'fade-in': 'fade-in 200ms ease-out both',
         'slide-in': 'slide-in 220ms cubic-bezier(0.16, 1, 0.3, 1) both',
-        orbit: 'orbit 3.2s linear infinite',
       },
     },
   },

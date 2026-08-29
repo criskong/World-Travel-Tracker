@@ -244,15 +244,22 @@ Tre vincoli da non rompere:
 - `useProgressiveReveal` deve invece dare un **array nuovo** a ogni consegna:
   react-kapsule riapplica una prop solo se ne cambia l'identità.
 
-**3. Un solo indicatore per volta.** `GlobeLoader` — un aereo che percorre una
-rotta tratteggiata — si vede SOLO finché il globo è vuoto. Appena i primi
-Paesi atterrano, sparisce: da lì in poi è il mappamondo che prende forma a
-dire che sta caricando. Un contatore "142 / 242" davanti ai continenti che
-compaiono era un secondo indicatore della stessa cosa. Il pannello ha anche un
-ritardo di 200 ms (`useDelayedFlag`), perché con il dataset in cache l'attesa
-finisce in pochi millisecondi e un pannello che lampeggia si nota più di uno
-che non compare. Niente blur: sta sopra il canvas WebGL nel momento in cui la
-CPU è più occupata.
+**3. Nessun indicatore di caricamento.** Non c'è nessuno spinner, nessuna
+percentuale, nessun pannello sopra il globo: l'unica cosa che dice che sta
+caricando è il mappamondo che prende forma. Ci si è arrivati per gradi — prima
+un pannello con un aereo e un contatore "142 / 242", poi solo il pannello
+durante il download — e ogni volta il verdetto è stato che era di troppo. Con
+il dataset in cache l'attesa è di pochi millisecondi, e un indicatore che
+appare e sparisce nello stesso respiro si nota più di uno che non c'è.
+
+Il prezzo, accettato consapevolmente: **alla primissima apertura**, mentre
+scarica i 3 MB, si vede una sfera senza Paesi e senza spiegazioni. Succede una
+volta sola per dispositivo. Non reintrodurre uno spinner per questo caso senza
+chiederlo prima.
+
+Resta invece il messaggio d'errore in fondo allo schermo quando il dataset non
+si carica affatto: quello non è un indicatore di attesa, è l'unica cosa che
+distingue "sta arrivando" da "non arriverà".
 
 **4. Copia locale del dataset** (`services/storage/geoDataset.ts`, tabella
 Dexie `datasets`, schema v2). Il GeoJSON non cambia mai fra un avvio e
