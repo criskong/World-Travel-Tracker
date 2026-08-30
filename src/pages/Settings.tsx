@@ -5,7 +5,7 @@ import {
   CheckCircle2,
   Download,
   HardDrive,
-  ImageOff,
+  Images,
   Languages,
   Share,
   Smartphone,
@@ -15,13 +15,14 @@ import {
 import { Modal } from '../components/UI/Modal'
 import { useTravelStore } from '../store/travelStore'
 import { useInstallPrompt } from '../hooks/useInstallPrompt'
-import { BACKUP_FILENAME, downloadBackup } from '../utils/backupFile'
+import { BACKUP_FILENAME, buildBackupZip, downloadBackup, readBackupFile } from '../utils/backupFile'
 import { parseTravelDataJson } from '../utils/travelDataSchema'
 import { useTranslation } from '../i18n/useTranslation'
 import { LANGUAGES, LANGUAGE_NAMES } from '../i18n/languages'
 import type { LocalizedMessage } from '../i18n/message'
 import type { Translation } from '../i18n/useTranslation'
-import type { TravelData, TravelDataExport } from '../types'
+import type { BackupBundle } from '../utils/backupFile'
+import type { TravelData } from '../types'
 
 /**
  * Gestione dell'app: lingua, installazione, export, import, reset.
@@ -39,13 +40,21 @@ interface PendingImport {
   fileName: string
   data: TravelData
   warnings: LocalizedMessage[]
+  /** Le foto trovate nell'archivio. Vuota per i vecchi backup in JSON. */
+  photos: Map<string, Blob>
 }
 
 type ImportState =
   | { status: 'idle' }
   | { status: 'reading' }
   | { status: 'rejected'; errors: LocalizedMessage[] }
-  | { status: 'done'; countries: number; trips: number; warnings: LocalizedMessage[] }
+  | {
+      status: 'done'
+      countries: number
+      trips: number
+      photos: number
+      warnings: LocalizedMessage[]
+    }
 
 export default function Settings() {
   const { t } = useTranslation()
@@ -54,11 +63,11 @@ export default function Settings() {
   const visits = useTravelStore((state) => state.visits)
   const storage = useTravelStore((state) => state.storage)
   const storageMessage = useTravelStore((state) => state.storageMessage)
-  const exportData = useTravelStore((state) => state.exportData)
+  const exportBackup = useTravelStore((state) => state.exportBackup)
   const importData = useTravelStore((state) => state.importData)
   const resetData = useTravelStore((state) => state.resetData)
 
-  const photoCount = visits.filter((visit) => visit.photoId !== undefined).length
+  const photoCount = visits.reduce((total, visit) => total + (visit.photoIds?.length ?? 0), 0)
   const isEmpty = manuallyMarked.length === 0 && visits.length === 0
 
   return (
@@ -79,7 +88,7 @@ export default function Settings() {
         trips={visits.length}
         photos={photoCount}
         isEmpty={isEmpty}
-        onExport={exportData}
+        onExport={exportBackup}
       />
 
       <ImportSection
@@ -309,15 +318,24 @@ function ExportSection({
   trips: number
   photos: number
   isEmpty: boolean
-  onExport: () => TravelDataExport
+  onExport: () => Promise<BackupBundle>
 }) {
   const { t } = useTranslation()
   const [saved, setSaved] = useState(false)
+  const [busy, setBusy] = useState(false)
 
-  const handleExport = useCallback(() => {
-    downloadBackup(onExport())
-    setSaved(true)
-  }, [onExport])
+  const handleExport = useCallback(async () => {
+    if (busy) return
+    setBusy(true)
+    try {
+      // Le foto si leggono da IndexedDB e finiscono binarie nello ZIP: il
+      // JSON non puo contenerle, e in base64 costerebbero il 33% in piu.
+      downloadBackup(await buildBackupZip(await onExport()))
+      setSaved(true)
+    } finally {
+      setBusy(false)
+    }
+  }, [busy, onExport])
 
   return (
     <SectionCard
@@ -329,25 +347,26 @@ function ExportSection({
       })}
     >
       {/*
-        L'avviso sulle foto sta PRIMA del bottone, per richiesta esplicita:
-        scoprire dopo il download che il backup non è completo sarebbe il modo
-        peggiore di scoprirlo.
+        Cosa contiene il file si dice PRIMA del bottone, non dopo il download.
       */}
-      <Notice tone="warning">
+      <Notice tone="neutral">
         <span className="flex gap-2">
-          <ImageOff size={14} className="mt-px shrink-0" aria-hidden />
+          <Images size={14} className="mt-px shrink-0" aria-hidden />
           <span>
-            <strong className="font-semibold">{t('settings.export.noPhotos')}</strong>{' '}
-            {t('settings.export.noPhotosBody')}
-            {photos > 0 && <> {t('settings.export.photosStay#', { count: photos })}</>}
+            <strong className="font-semibold text-slate-300">
+              {t('settings.export.withPhotos')}
+            </strong>{' '}
+            {photos > 0
+              ? t('settings.export.photosIncluded#', { count: photos })
+              : t('settings.export.noPhotosYet')}
           </span>
         </span>
       </Notice>
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
-        <ActionButton onClick={handleExport} disabled={isEmpty}>
+        <ActionButton onClick={() => void handleExport()} disabled={isEmpty || busy}>
           <Download size={15} aria-hidden />
-          {t('settings.export.button')}
+          {busy ? t('settings.export.preparing') : t('settings.export.button')}
         </ActionButton>
         <span className="font-mono text-xs text-subtle">{BACKUP_FILENAME}</span>
       </div>
@@ -389,32 +408,38 @@ function ImportSection({
     setPending(null)
     setState({ status: 'reading' })
 
-    let text: string
+    // ZIP o vecchio JSON: il formato si riconosce dai byte, non dal nome.
+    let content: Awaited<ReturnType<typeof readBackupFile>>
     try {
-      text = await file.text()
+      content = await readBackupFile(file)
     } catch {
-      setState({ status: 'rejected', errors: [{ key: 'validation.readFailed' }] })
+      setState({ status: 'rejected', errors: [{ key: 'validation.badArchive' }] })
       return
     }
 
     // Validazione completa PRIMA di qualunque scrittura: se fallisce qui, il
     // database non è stato nemmeno aperto.
-    const parsed = parseTravelDataJson(text)
+    const parsed = parseTravelDataJson(content.json)
     if (!parsed.ok) {
       setState({ status: 'rejected', errors: parsed.errors })
       return
     }
 
     setState({ status: 'idle' })
-    setPending({ fileName: file.name, data: parsed.data, warnings: parsed.warnings })
+    setPending({
+      fileName: file.name,
+      data: parsed.data,
+      warnings: parsed.warnings,
+      photos: content.photos,
+    })
   }, [])
 
   const confirmImport = useCallback(async () => {
     if (!pending) return
-    const { data, warnings } = pending
+    const { data, warnings, photos } = pending
     setPending(null)
 
-    const outcome = await onImport(data)
+    const outcome = await onImport(data, photos)
     if (!outcome.ok) {
       setState({ status: 'rejected', errors: outcome.errors })
       return
@@ -423,6 +448,7 @@ function ImportSection({
       status: 'done',
       countries: data.manuallyMarked.length,
       trips: data.visits.length,
+      photos: photos.size,
       warnings,
     })
   }, [onImport, pending])
@@ -461,7 +487,7 @@ function ImportSection({
           {state.status === 'reading' ? t('settings.import.reading') : t('settings.import.choose')}
           <input
             type="file"
-            accept="application/json,.json"
+            accept=".zip,.json,application/zip,application/json"
             className="sr-only"
             onChange={handleFile}
           />
@@ -483,6 +509,7 @@ function ImportSection({
               countries: t('common.country#', { count: state.countries }),
               trips: t('common.trip#', { count: state.trips }),
             })}
+            {state.photos > 0 && ` ${t('settings.import.photosRestored#', { count: state.photos })}`}
           </p>
           <MessageList
             messages={state.warnings}
@@ -503,6 +530,8 @@ function ImportSection({
               countries: t('common.country#', { count: pending.data.manuallyMarked.length }),
               trips: t('common.trip#', { count: pending.data.visits.length }),
             })}
+            {pending.photos.size > 0 &&
+              ` ${t('settings.import.photosFound#', { count: pending.photos.size })}`}
           </p>
 
           {hasSomethingToLose ? (

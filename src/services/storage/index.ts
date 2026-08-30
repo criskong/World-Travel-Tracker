@@ -24,7 +24,15 @@ export {
   clearVisits,
 } from './trips'
 
-export { savePhoto, loadPhoto, removePhoto, removeOrphanPhotos, clearPhotos } from './photos'
+export {
+  savePhoto,
+  restorePhoto,
+  loadPhoto,
+  loadAllPhotos,
+  removePhoto,
+  removeOrphanPhotos,
+  clearPhotos,
+} from './photos'
 
 export { requestPersistentStorage } from './persistence'
 export type { PersistenceResult } from './persistence'

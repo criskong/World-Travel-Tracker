@@ -115,10 +115,14 @@ export const it: Record<keyof typeof en, string> = {
   'visit.photo': 'Foto',
   'visit.addPhoto': 'Aggiungi una foto',
   'visit.removePhoto': 'Rimuovi la foto',
-  'visit.photoLimit': '(facoltativa, max {size})',
+  'visit.photoLimit': '(facoltative, fino a {max}, max {size} l’una)',
   'visit.photoNotFound': 'Foto non trovata',
+  'visit.photosMissing#one': '1 foto non e piu su questo dispositivo',
+  'visit.photosMissing#other': '{count} foto non sono piu su questo dispositivo',
   'visit.photoLoading': 'Caricamento della foto…',
-  'visit.choose': 'Scegli una foto',
+  'visit.choose': 'Scegli le foto',
+  'visit.chooseMore': 'Aggiungi altre foto',
+  'visit.removePhotoAt': 'Rimuovi la foto {position}',
   'visit.save': 'Salva il viaggio',
   'visit.saving': 'Salvataggio…',
   'visit.remove': 'Elimina questo viaggio',
@@ -222,12 +226,14 @@ export const it: Record<keyof typeof en, string> = {
   'settings.export.title': 'Esporta un backup',
   'settings.export.description':
     'Salva {countries} segnati a mano e {trips} in un file JSON che tieni tu.',
-  'settings.export.noPhotos': 'Le foto non sono incluse.',
-  'settings.export.noPhotosBody': 'Il file contiene solo Paesi, date, città e note.',
-  'settings.export.photosStay#one':
-    'La foto che hai allegato resta su questo dispositivo e andrà persa se cancelli i dati del browser.',
-  'settings.export.photosStay#other':
-    'Le {count} foto che hai allegato restano su questo dispositivo e andranno perse se cancelli i dati del browser.',
+  'settings.export.withPhotos': 'Le foto sono incluse.',
+  'settings.export.photosIncluded#one':
+    'Il file è uno .zip con dentro la tua foto, insieme a Paesi, date, città e note.',
+  'settings.export.photosIncluded#other':
+    'Il file è uno .zip con dentro le tue {count} foto, insieme a Paesi, date, città e note.',
+  'settings.export.noPhotosYet':
+    'Il file è uno .zip: per ora Paesi, date, città e note, e le tue foto appena ne aggiungi.',
+  'settings.export.preparing': 'Preparazione…',
   'settings.export.button': 'Esporta il backup',
   'settings.export.nothing':
     'Non c’è ancora niente da esportare — segna un Paese o aggiungi un viaggio.',
@@ -242,6 +248,10 @@ export const it: Record<keyof typeof en, string> = {
   'settings.import.reading': 'Lettura…',
   'settings.import.rejected': 'Questo file non è stato importato. I tuoi dati sono intatti.',
   'settings.import.done': 'Importati {countries} e {trips}.',
+  'settings.import.photosRestored#one': '1 foto ripristinata.',
+  'settings.import.photosRestored#other': '{count} foto ripristinate.',
+  'settings.import.photosFound#one': 'Contiene anche 1 foto.',
+  'settings.import.photosFound#other': 'Contiene anche {count} foto.',
   'settings.import.confirmTitle': 'Sostituire tutti i tuoi dati?',
   'settings.import.confirmBody': '{file} contiene {countries} e {trips}.',
   'settings.import.confirmLoss':
@@ -303,6 +313,8 @@ export const it: Record<keyof typeof en, string> = {
   'validation.missingMarked': 'Manca il campo "manuallyMarked", oppure non è un elenco.',
   'validation.missingVisits': 'Manca il campo "visits", oppure non è un elenco.',
   'validation.readFailed': 'Non è stato possibile leggere quel file. Prova a sceglierlo di nuovo.',
+  'validation.badArchive':
+    'Non è stato possibile aprire questo file. Scegli il backup .zip esportato da questa app, senza scompattarlo.',
   'validation.skippedCountries#one': '{count} Paese saltato: codice ISO sconosciuto.',
   'validation.skippedCountries#other': '{count} Paesi saltati: codice ISO sconosciuto.',
   'validation.skippedTrips#one': '{count} viaggio saltato: dati incompleti o non validi.',
@@ -312,5 +324,6 @@ export const it: Record<keyof typeof en, string> = {
   'photo.notImage': 'Quel file non è un’immagine. Scegli un JPEG, PNG, WebP, GIF o AVIF.',
   'photo.tooLarge': 'Quella foto pesa {size}, oltre il limite di {limit}. Scegline una più piccola.',
   'photo.unsupported': '{type} non è supportato. Usa JPEG, PNG, WebP, GIF o AVIF.',
+  'photo.tooMany': 'Un viaggio può avere al massimo {max} foto.',
   'photo.empty': 'Quel file è vuoto.',
 }

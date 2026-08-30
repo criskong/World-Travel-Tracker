@@ -5,7 +5,7 @@ import { useTravelStore } from '../store/travelStore'
 import { groupVisitsByYear } from '../utils/tripsTimeline'
 import { flagEmoji } from '../utils/flag'
 import { useTranslation } from '../i18n/useTranslation'
-import { usePhoto } from '../hooks/usePhoto'
+import { usePhotos } from '../hooks/usePhotos'
 import type { TimelineEntry } from '../utils/tripsTimeline'
 
 /** Timeline dei viaggi, raggruppata per anno dal più recente. */
@@ -72,7 +72,7 @@ function TimelineRow({
 }) {
   const { visit, country } = entry
   const { country: countryLabel, date } = useTranslation()
-  const { url } = usePhoto(visit.photoId)
+  const { urls } = usePhotos(visit.photoIds)
 
   return (
     <li>
@@ -108,13 +108,20 @@ function TimelineRow({
           )}
         </span>
 
-        {url !== null && (
-          <img
-            src={url}
-            alt=""
-            loading="lazy"
-            className="h-14 w-14 shrink-0 rounded-lg border border-edge object-cover"
-          />
+        {urls[0] !== undefined && (
+          <span className="relative shrink-0">
+            <img
+              src={urls[0]}
+              alt=""
+              loading="lazy"
+              className="h-14 w-14 rounded-lg border border-edge object-cover"
+            />
+            {urls.length > 1 && (
+              <span className="absolute bottom-0.5 right-0.5 rounded bg-black/75 px-1 text-[10px] font-medium tabular-nums text-slate-200">
+                {urls.length}
+              </span>
+            )}
+          </span>
         )}
       </button>
     </li>

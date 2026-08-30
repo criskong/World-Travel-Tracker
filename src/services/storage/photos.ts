@@ -4,16 +4,33 @@ import { newId } from '../../utils/id'
 /**
  * Persistenza delle foto.
  * Le immagini vivono qui come `Blob`; i viaggi le referenziano tramite
- * `Visit.photoId`. Mai base64 in IndexedDB: pesa ~33% in più e blocca il
+ * `Visit.photoIds`. Mai base64 in IndexedDB: pesa ~33% in più e blocca il
  * thread in serializzazione.
  */
 
-/** Salva un Blob e restituisce l'id da mettere in `Visit.photoId`. */
+/** Salva un Blob e restituisce l'id da mettere in `Visit.photoIds`. */
 export async function savePhoto(blob: Blob): Promise<string> {
   const db = await openDatabase()
   const id = newId()
   await db.photos.put({ id, blob, createdAt: new Date().toISOString() })
   return id
+}
+
+/**
+ * Salva un Blob CONSERVANDO il suo id. Serve al ripristino da un backup:
+ * i viaggi importati referenziano gli id che avevano, e riassegnarne di nuovi
+ * spezzerebbe il collegamento.
+ */
+export async function restorePhoto(id: string, blob: Blob): Promise<void> {
+  const db = await openDatabase()
+  await db.photos.put({ id, blob, createdAt: new Date().toISOString() })
+}
+
+/** Tutte le foto presenti, con il loro id. Serve all'export. */
+export async function loadAllPhotos(): Promise<{ id: string; blob: Blob }[]> {
+  const db = await openDatabase()
+  const rows = await db.photos.toArray()
+  return rows.map((row) => ({ id: row.id, blob: row.blob }))
 }
 
 export async function loadPhoto(id: string): Promise<Blob | undefined> {
@@ -37,7 +54,7 @@ export async function removeOrphanPhotos(): Promise<number> {
   return db.transaction('rw', db.photos, db.visits, async () => {
     const visits = await db.visits.toArray()
     const referenced = new Set(
-      visits.map((visit) => visit.photoId).filter((id): id is string => typeof id === 'string'),
+      visits.flatMap((visit) => visit.photoIds ?? []),
     )
     const ids = await db.photos.toCollection().primaryKeys()
     const orphans = ids.filter((id) => !referenced.has(id))

@@ -56,6 +56,21 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
+/**
+ * Riferimenti alle foto, da entrambi i formati.
+ * Il formato 1 aveva `photoId`, uno solo per viaggio; il 2 ha `photoIds`.
+ * I backup vecchi devono continuare a funzionare: sono di qualcuno.
+ */
+function readPhotoIds(entry: Record<string, unknown>): string[] {
+  const single = optionalText(entry.photoId)
+  const many = Array.isArray(entry.photoIds)
+    ? entry.photoIds.map(optionalText).filter((id): id is string => id !== undefined)
+    : []
+  const all = single === undefined ? many : [single, ...many]
+  // Nessun duplicato: due riferimenti allo stesso Blob non hanno senso.
+  return [...new Set(all)]
+}
+
 /** Valida e normalizza un payload di import. Non tocca mai il database. */
 export function parseTravelData(input: unknown): TravelDataValidationResult {
   const errors: LocalizedMessage[] = []
@@ -119,10 +134,11 @@ export function parseTravelData(input: unknown): TravelDataValidationResult {
     const visit: Visit = { id, countryCode: code, date: entry.date }
     const city = optionalText(entry.city)
     const note = optionalText(entry.note)
-    const photoId = optionalText(entry.photoId)
     if (city !== undefined) visit.city = city
     if (note !== undefined) visit.note = note
-    if (photoId !== undefined) visit.photoId = photoId
+
+    const photoIds = readPhotoIds(entry)
+    if (photoIds.length > 0) visit.photoIds = photoIds
     visits.push(visit)
   }
 

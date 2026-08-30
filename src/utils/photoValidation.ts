@@ -8,8 +8,16 @@ import type { LocalizedMessage } from '../i18n/message'
  * a rifiutare le scritture e l'utente non capisce perché.
  */
 
-/** Limite per singola foto. */
+/** Limite per singola foto. Ci sta qualunque foto scattata col telefono. */
 export const MAX_PHOTO_BYTES = 5 * 1024 * 1024
+
+/**
+ * Quante foto puo avere un viaggio.
+ * Un tetto serve: senza, un viaggio con trecento foto riempirebbe la quota
+ * del browser e le scritture inizierebbero a fallire senza spiegazione. Dieci
+ * e abbastanza per ricordarsi un viaggio e poco abbastanza da non far male.
+ */
+export const MAX_PHOTOS_PER_VISIT = 10
 
 export const ACCEPTED_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif']
 

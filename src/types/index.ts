@@ -25,8 +25,11 @@ export interface Visit {
   date: string
   city?: string
   note?: string
-  /** Riferimento a un Blob nella tabella `photos`. Mai la foto stessa. */
-  photoId?: string
+  /**
+   * Riferimenti ai Blob nella tabella `photos`. Mai le foto stesse.
+   * Un viaggio puo averne piu di una: fino a `MAX_PHOTOS_PER_VISIT`.
+   */
+  photoIds?: string[]
 }
 
 /**
@@ -39,7 +42,14 @@ export interface TravelData {
 }
 
 /** Versione corrente del formato di import/export. */
-export const TRAVEL_DATA_FORMAT_VERSION = 1
+export const TRAVEL_DATA_FORMAT_VERSION = 2
+
+/**
+ * Formati che sappiamo ancora leggere.
+ * Il formato 1 aveva una sola foto per viaggio, in `photoId`: i backup
+ * esportati allora devono continuare a funzionare.
+ */
+export const OLDEST_READABLE_FORMAT_VERSION = 1
 
 /** Payload del file JSON di backup: `TravelData` più i metadati di formato. */
 export interface TravelDataExport extends TravelData {

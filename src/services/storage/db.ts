@@ -78,6 +78,26 @@ export class TravelDatabase extends Dexie {
     this.version(3).stores({
       preferences: '&key',
     })
+
+    /*
+     * v4: da una foto per viaggio a molte. Lo schema degli indici non cambia,
+     * cambia la forma delle righe — quindi niente `.stores()` nuovo ma un
+     * `.upgrade()`: chi aveva gia dei viaggi con `photoId` se li ritrova in
+     * `photoIds`, senza perdere niente e senza doverci pensare.
+     */
+    this.version(4)
+      .stores({})
+      .upgrade(async (transaction) => {
+        await transaction
+          .table('visits')
+          .toCollection()
+          .modify((visit: { photoId?: string; photoIds?: string[] }) => {
+            if (typeof visit.photoId === 'string' && visit.photoId.length > 0) {
+              visit.photoIds = [visit.photoId]
+            }
+            delete visit.photoId
+          })
+      })
   }
 }
 

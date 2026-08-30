@@ -57,7 +57,7 @@ describe('photos', () => {
 
     const kept = await savePhoto(new Blob(['tenuta']))
     const orphan = await savePhoto(new Blob(['orfana']))
-    await saveVisit({ id: 'v1', countryCode: 'JP', date: '2024-05-01', photoId: kept })
+    await saveVisit({ id: 'v1', countryCode: 'JP', date: '2024-05-01', photoIds: [kept] })
 
     expect(await removeOrphanPhotos()).toBe(1)
     expect(await loadPhoto(kept)).toBeDefined()

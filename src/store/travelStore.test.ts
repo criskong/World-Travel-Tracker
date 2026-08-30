@@ -173,7 +173,7 @@ describe('exportData / importData', () => {
     await useTravelStore.getState().markVisited('IT')
     const exported = useTravelStore.getState().exportData()
 
-    expect(exported.formatVersion).toBe(1)
+    expect(exported.formatVersion).toBe(2)
     expect(exported.manuallyMarked).toEqual(['IT'])
     expect(exported.visits).toEqual([])
     expect(Number.isNaN(Date.parse(exported.exportedAt))).toBe(false)
@@ -240,9 +240,9 @@ describe('resetData', () => {
     const photo = new Blob(['x'.repeat(128)], { type: 'image/jpeg' })
     const visit = await useTravelStore
       .getState()
-      .addVisit({ countryCode: 'JP', date: '2024-05-01' }, photo)
+      .addVisit({ countryCode: 'JP', date: '2024-05-01' }, [photo])
 
-    const photoId = visit?.photoId
+    const photoId = visit?.photoIds?.[0]
     expect(photoId).toBeDefined()
     expect(await loadPhoto(photoId!)).toBeDefined()
 

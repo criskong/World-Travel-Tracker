@@ -2,9 +2,14 @@ import { useCallback, useMemo, useRef, useState } from 'react'
 import { ImagePlus, X } from 'lucide-react'
 import { COUNTRIES } from '../../data/countries/countries'
 import { useTravelStore } from '../../store/travelStore'
-import { useObjectUrl } from '../../hooks/useObjectUrl'
+import { useObjectUrls } from '../../hooks/useObjectUrl'
 import { flagEmoji } from '../../utils/flag'
-import { MAX_PHOTO_BYTES, formatBytes, validatePhoto } from '../../utils/photoValidation'
+import {
+  MAX_PHOTOS_PER_VISIT,
+  MAX_PHOTO_BYTES,
+  formatBytes,
+  validatePhoto,
+} from '../../utils/photoValidation'
 import { useTranslation } from '../../i18n/useTranslation'
 import type { LocalizedMessage } from '../../i18n/message'
 
@@ -43,14 +48,14 @@ export function AddVisitForm({ countryCode, onDone, onCancel }: AddVisitFormProp
   const [date, setDate] = useState(today())
   const [city, setCity] = useState('')
   const [note, setNote] = useState('')
-  const [photo, setPhoto] = useState<File | null>(null)
+  const [photos, setPhotos] = useState<File[]>([])
   const [photoError, setPhotoError] = useState<LocalizedMessage | null>(null)
   const [saving, setSaving] = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
-  // L'anteprima revoca il proprio object URL quando il file cambia e allo
+  // Le anteprime revocano i propri object URL quando la lista cambia e allo
   // smontaggio: senza, ogni foto scelta resterebbe in memoria.
-  const previewUrl = useObjectUrl(photo)
+  const previewUrls = useObjectUrls(photos)
 
   // L'ordine alfabetico segue la lingua: in italiano "Germania" non sta dove
   // sta "Germany".
@@ -62,26 +67,40 @@ export function AddVisitForm({ countryCode, onDone, onCancel }: AddVisitFormProp
     [compare, countryLabel],
   )
 
-  const handleFile = useCallback((file: File | null) => {
-    if (!file) {
-      setPhoto(null)
-      setPhotoError(null)
-      return
-    }
-    const validation = validatePhoto(file)
-    if (!validation.ok) {
-      setPhoto(null)
-      setPhotoError(validation.error)
-      return
-    }
-    setPhoto(file)
-    setPhotoError(null)
+  /**
+   * Aggiunge i file scelti a quelli gia presenti.
+   * Le foto valide entrano comunque: se una sola e troppo grande, si segnala
+   * quella e si tengono le altre, invece di far ricominciare da capo.
+   */
+  const handleFiles = useCallback((chosen: FileList | null) => {
+    if (fileInputRef.current) fileInputRef.current.value = ''
+    if (!chosen || chosen.length === 0) return
+
+    setPhotos((current) => {
+      let error: LocalizedMessage | null = null
+      const accepted = [...current]
+
+      for (const file of chosen) {
+        if (accepted.length >= MAX_PHOTOS_PER_VISIT) {
+          error = { key: 'photo.tooMany', vars: { max: MAX_PHOTOS_PER_VISIT } }
+          break
+        }
+        const validation = validatePhoto(file)
+        if (!validation.ok) {
+          error = validation.error
+          continue
+        }
+        accepted.push(file)
+      }
+
+      setPhotoError(error)
+      return accepted
+    })
   }, [])
 
-  const clearPhoto = useCallback(() => {
-    setPhoto(null)
+  const removePhoto = useCallback((index: number) => {
+    setPhotos((current) => current.filter((_, position) => position !== index))
     setPhotoError(null)
-    if (fileInputRef.current) fileInputRef.current.value = ''
   }, [])
 
   const handleSubmit = useCallback(
@@ -97,13 +116,13 @@ export function AddVisitForm({ countryCode, onDone, onCancel }: AddVisitFormProp
           ...(city.trim() ? { city: city.trim() } : {}),
           ...(note.trim() ? { note: note.trim() } : {}),
         },
-        photo,
+        photos.length > 0 ? photos : undefined,
       )
 
       setSaving(false)
       if (created) onDone()
     },
-    [addVisit, city, code, date, note, photo, saving],
+    [addVisit, city, code, date, note, photos, saving],
   )
 
   return (
@@ -176,30 +195,39 @@ export function AddVisitForm({ countryCode, onDone, onCancel }: AddVisitFormProp
           <span className={LABEL_CLASS}>
             {t('visit.photo')}{' '}
             <span className="text-subtle">
-              {t('visit.photoLimit', { size: formatBytes(MAX_PHOTO_BYTES) })}
+              {t('visit.photoLimit', {
+                max: MAX_PHOTOS_PER_VISIT,
+                size: formatBytes(MAX_PHOTO_BYTES),
+              })}
             </span>
           </span>
 
-          {previewUrl === null ? (
+          {previewUrls.length > 0 && (
+            <ul className="mt-1.5 grid grid-cols-3 gap-1.5 sm:grid-cols-4">
+              {previewUrls.map((url, index) => (
+                <li key={url} className="relative overflow-hidden rounded-lg border border-edge">
+                  <img src={url} alt="" className="h-20 w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => removePhoto(index)}
+                    aria-label={t('visit.removePhotoAt', { position: index + 1 })}
+                    className="absolute right-1 top-1 rounded-md bg-black/70 p-1 text-slate-300 transition-colors hover:text-white"
+                  >
+                    <X size={12} aria-hidden />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {photos.length < MAX_PHOTOS_PER_VISIT && (
             <label
               htmlFor="visit-photo"
-              className="mt-1 flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-edge-strong px-3 py-2.5 text-sm text-muted transition-colors hover:border-accent/40 hover:text-slate-400"
+              className="mt-1.5 flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-edge-strong px-3 py-2.5 text-sm text-muted transition-colors hover:border-accent/40 hover:text-slate-400"
             >
               <ImagePlus size={16} aria-hidden />
-              {t('visit.choose')}
+              {photos.length === 0 ? t('visit.choose') : t('visit.chooseMore')}
             </label>
-          ) : (
-            <div className="relative mt-1 overflow-hidden rounded-xl border border-edge">
-              <img src={previewUrl} alt="" className="h-32 w-full object-cover" />
-              <button
-                type="button"
-                onClick={clearPhoto}
-                aria-label={t('visit.removePhoto')}
-                className="absolute right-2 top-2 rounded-lg bg-black/70 p-1.5 text-slate-300 transition-colors hover:text-white"
-              >
-                <X size={14} aria-hidden />
-              </button>
-            </div>
           )}
 
           <input
@@ -207,8 +235,9 @@ export function AddVisitForm({ countryCode, onDone, onCancel }: AddVisitFormProp
             id="visit-photo"
             type="file"
             accept="image/*"
+            multiple
             className="sr-only"
-            onChange={(event) => handleFile(event.target.files?.[0] ?? null)}
+            onChange={(event) => handleFiles(event.target.files)}
           />
 
           {photoError !== null && (

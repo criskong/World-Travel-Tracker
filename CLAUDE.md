@@ -429,6 +429,50 @@ consente l'installazione solo dal menu Condividi, quindi l'unica cosa utile e
 scrivere i passaggi. Il bottone in Impostazioni compare solo dove serve, e
 dove l'app e gia installata lo dice invece di riproporsi.
 
+### Foto e formato del backup (dopo la fase 6)
+
+**Piu foto per viaggio, fino a 10.** Prima era una sola, per via del modello
+dati (`photoId?: string`), e non era una scelta: era un limite che nessuno
+aveva mai messo in discussione. Ora `photoIds?: string[]`, con la migrazione
+Dexie v4 che converte i viaggi esistenti — chi aveva una foto se la ritrova,
+senza doverci pensare. Il tetto di 10 serve: senza, un viaggio con trecento
+foto riempirebbe la quota del browser e le scritture inizierebbero a fallire
+senza spiegazione.
+
+Restano 5 MB per singola foto: ci sta qualunque cosa esca da un telefono,
+tranne un 48 megapixel a qualita massima. In quel caso il form lo dice e il
+viaggio si salva lo stesso senza quella foto.
+
+**Il backup e uno ZIP, non piu un JSON.** Il JSON non puo contenere dati
+binari: le foto ci sarebbero entrate solo in base64, +33% di peso e un unico
+file di testo da decine di megabyte da tenere tutto in memoria. Nello ZIP
+restano file veri.
+
+```
+world-travel-tracker-backup.zip
+  backup.json          Paesi e viaggi
+  photos/<id>.jpg      una per foto, col nome dell'id che i viaggi referenziano
+  LEGGIMI.txt          cosa c'e dentro, in italiano e in inglese
+```
+
+Lo ZIP e scritto a mano in `src/utils/zip.ts`, senza dipendenze, con metodo
+"stored": le foto sono gia JPEG, comprimerle una seconda volta guadagnerebbe
+percentuali e costerebbe tempo. Verificato aprendo un archivio prodotto da noi
+con `zipfile` di Python: CRC validi e byte identici, quindi si apre con
+qualunque strumento, non solo col nostro lettore.
+
+**`formatVersion` passa a 2, ma l'import legge ancora il formato 1.** I backup
+`.json` esportati prima sono di qualcuno, e romperli sarebbe il modo peggiore
+di introdurre un formato nuovo: il vecchio `photoId` singolo viene letto e
+convertito in `photoIds`. Il formato del file in ingresso si riconosce dai
+**byte**, non dall'estensione: un file rinominato non deve produrre un errore
+incomprensibile.
+
+**Cosa non risolve.** Reimportare un backup vecchio in JSON ripristina i
+riferimenti ma non le foto, che quel file non conteneva. `usePhotos` espone
+`missing` proprio per questo, e la card lo scrive: meglio dire che mancano
+delle foto che mostrarne meno in silenzio.
+
 ### Archiviazione non disponibile (decisa in fase 2)
 
 Quando IndexedDB non è utilizzabile (Safari in navigazione privata) l'app non

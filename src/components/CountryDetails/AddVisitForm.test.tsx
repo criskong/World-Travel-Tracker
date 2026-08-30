@@ -134,17 +134,18 @@ describe('AddVisitForm', () => {
     expect(revoked).toEqual(created)
   })
 
-  it("revoca l'anteprima precedente quando si cambia foto", async () => {
+  it("revoca le anteprime precedenti quando si aggiunge una foto", async () => {
     renderForm()
 
     selectFile(fileOfSize(100_000))
     await waitFor(() => expect(created).toHaveLength(1))
     const first = created[0]!
 
+    // La seconda foto rifa la lista: l'URL della prima va revocato e ricreato.
     selectFile(fileOfSize(200_000))
-    await waitFor(() => expect(created).toHaveLength(2))
+    await waitFor(() => expect(created.length).toBeGreaterThan(1))
 
-    expect(revoked).toEqual([first])
+    expect(revoked).toContain(first)
   })
 
   it("revoca l'anteprima quando si rimuove la foto", async () => {
@@ -153,9 +154,28 @@ describe('AddVisitForm', () => {
     selectFile(fileOfSize(100_000))
     await waitFor(() => expect(created).toHaveLength(1))
 
-    fireEvent.click(screen.getByRole('button', { name: 'Remove photo' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Remove photo 1' }))
 
-    await waitFor(() => expect(revoked).toEqual(created))
+    await waitFor(() => expect(revoked).toEqual(expect.arrayContaining(created)))
+  })
+
+  it('accetta piu foto per lo stesso viaggio', async () => {
+    const { onDone } = renderForm()
+
+    selectFile(fileOfSize(100_000))
+    await waitFor(() => expect(created).toHaveLength(1))
+    selectFile(fileOfSize(120_000))
+    // Le anteprime hanno alt vuoto (sono decorative): si contano dai loro
+    // bottoni di rimozione, che invece un nome accessibile ce l'hanno.
+    await waitFor(() =>
+      expect(screen.getAllByRole('button', { name: /Remove photo/ })).toHaveLength(2),
+    )
+
+    fireEvent.submit(screen.getByRole('button', { name: 'Save trip' }).closest('form')!)
+    await waitFor(() => expect(onDone).toHaveBeenCalled())
+
+    const [visit] = useTravelStore.getState().visits
+    expect(visit?.photoIds).toHaveLength(2)
   })
 
   /**
@@ -177,13 +197,13 @@ describe('AddVisitForm', () => {
     await waitFor(() => expect(onDone).toHaveBeenCalled())
 
     const [visit] = useTravelStore.getState().visits
-    expect(visit?.photoId).toBeTruthy()
+    expect(visit?.photoIds).toHaveLength(1)
 
     const { loadPhoto } = await import('../../services/storage')
-    expect(await loadPhoto(visit!.photoId!)).toBeDefined()
+    expect(await loadPhoto(visit!.photoIds![0]!)).toBeDefined()
   })
 
-  it('senza foto il viaggio non ha photoId', async () => {
+  it('senza foto il viaggio non ha photoIds', async () => {
     const { onDone } = renderForm()
 
     fireEvent.change(screen.getByLabelText(/Date/), { target: { value: '2024-05-03' } })

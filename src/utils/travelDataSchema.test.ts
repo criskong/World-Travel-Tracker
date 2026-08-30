@@ -112,7 +112,7 @@ describe('parseTravelData', () => {
           date: '2024-07-14',
           city: '  Paris  ',
           note: '   ',
-          photoId: 'p1',
+          photoIds: ['p1'],
           campoSconosciuto: 'ignorato',
         },
       ],
@@ -125,7 +125,7 @@ describe('parseTravelData', () => {
       countryCode: 'FR',
       date: '2024-07-14',
       city: 'Paris',
-      photoId: 'p1',
+      photoIds: ['p1'],
     })
   })
 })

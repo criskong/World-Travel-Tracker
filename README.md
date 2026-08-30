@@ -16,8 +16,8 @@ funzionante offline dopo il primo caricamento.
   accendono con il colore accento, con una transizione morbida.
 - **Paesi** — elenco completo con ricerca per nome o codice ISO, filtro per
   stato di visita e per continente.
-- **Viaggi** — piu visite per Paese, ciascuna con data, citta, nota e una
-  foto. Timeline raggruppata per anno.
+- **Viaggi** — piu visite per Paese, ciascuna con data, citta, nota e fino a
+  dieci foto. Timeline raggruppata per anno.
 - **Statistiche** — copertura per continente con barre di avanzamento, elenco
   di cosa resta da vedere, distribuzione dei viaggi per anno.
 - **Achievement** — sette traguardi che si sbloccano da soli, dal primo Paese
@@ -152,7 +152,7 @@ recuperarli al posto tuo.
 |---|---|
 | `manuallyMarked` | Paesi segnati come visitati a mano |
 | `visits` | I viaggi: Paese, data, citta, nota, riferimento alla foto |
-| `photos` | Le foto come `Blob`, mai in base64 |
+| `photos` | Le foto come `Blob`, mai in base64. Fino a 10 per viaggio, 5 MB l'una |
 | `datasets` | Copia locale del GeoJSON, per non riscaricarlo a ogni avvio |
 | `preferences` | Lingua dell'interfaccia. Non entra nel backup |
 
@@ -171,10 +171,23 @@ chiudendo la scheda, e lascia comunque lavorare.
 
 ## Import / export
 
-**Export** produce `world-travel-tracker-backup.json` con un campo
-`formatVersion`. **Le foto non entrano nel backup**, e l'app lo dice prima
-del bottone, non dopo il download: restano `Blob` in IndexedDB, e un JSON con
-le immagini dentro sarebbe enorme.
+**Export** produce `world-travel-tracker-backup.zip`, **foto comprese**:
+
+```
+world-travel-tracker-backup.zip
+  backup.json          Paesi e viaggi, con un campo formatVersion
+  photos/<id>.jpg      le foto, una per file
+  LEGGIMI.txt          cosa c'e dentro
+```
+
+E uno ZIP e non un JSON perche il JSON non puo contenere dati binari: le foto
+ci starebbero solo in base64, +33% di peso e un unico file di testo enorme.
+Lo scrive `src/utils/zip.ts` a mano, senza dipendenze.
+
+L'import accetta ancora i vecchi backup `.json`, e riconosce il formato dai
+byte invece che dall'estensione. Un backup vecchio ripristina i riferimenti
+alle foto ma non le foto, che quel file non conteneva: l'app lo segnala sulla
+card del viaggio invece di mostrarne meno in silenzio.
 
 **Import sostituisce, non fonde.** Un backup e la fotografia di uno stato e
 ripristinarlo deve restituire quello stato; fondere lascerebbe in giro voci

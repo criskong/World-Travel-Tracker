@@ -82,16 +82,27 @@ const VALID_BACKUP = {
 }
 
 describe('Export', () => {
-  it("dice che le foto non entrano nel backup PRIMA del bottone", () => {
+  it('dice cosa contiene il file PRIMA del bottone', () => {
     render(<Settings />)
     const section = screen.getByRole('region', { name: 'Export a backup' })
 
-    const notice = within(section).getByText(/Photos are not included/i)
+    const notice = within(section).getByText(/Photos are included/i)
     const button = within(section).getByRole('button', { name: /Export backup/i })
 
-    expect(notice).toBeDefined()
     // `compareDocumentPosition` con FOLLOWING: l'avviso precede il bottone.
     expect(notice.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('dice quante foto ci sono dentro', async () => {
+    await useTravelStore
+      .getState()
+      .addVisit({ countryCode: 'JP', date: '2024-01-01' }, [
+        new Blob(['a'], { type: 'image/jpeg' }),
+        new Blob(['b'], { type: 'image/jpeg' }),
+      ])
+
+    render(<Settings />)
+    expect(screen.getByText(/with your 2 photos inside/i)).toBeDefined()
   })
 
   it('non si puo esportare uno stato vuoto', () => {
@@ -100,7 +111,7 @@ describe('Export', () => {
     expect((button as HTMLButtonElement).disabled).toBe(true)
   })
 
-  it('scarica un file col nome previsto e con la versione di schema', async () => {
+  it('scarica un archivio col nome previsto e con la versione di schema', async () => {
     await useTravelStore.getState().markVisited('IT')
     render(<Settings />)
 
@@ -112,12 +123,13 @@ describe('Export', () => {
 
     try {
       fireEvent.click(screen.getByRole('button', { name: /Export backup/i }))
+      await waitFor(() => expect(clicked).toHaveLength(1))
     } finally {
       HTMLAnchorElement.prototype.click = realClick
     }
 
-    expect(clicked).toHaveLength(1)
     expect(clicked[0]?.download).toBe(BACKUP_FILENAME)
+    expect(BACKUP_FILENAME.endsWith('.zip')).toBe(true)
     expect(createdUrls).toHaveLength(1)
 
     const payload = useTravelStore.getState().exportData()
@@ -290,8 +302,10 @@ describe('Reset', () => {
     await useTravelStore.getState().markVisited('IT')
     const visit = await useTravelStore
       .getState()
-      .addVisit({ countryCode: 'JP', date: '2024-01-01' }, new Blob(['ph'], { type: 'image/jpeg' }))
-    const photoId = visit?.photoId
+      .addVisit({ countryCode: 'JP', date: '2024-01-01' }, [
+        new Blob(['ph'], { type: 'image/jpeg' }),
+      ])
+    const photoId = visit?.photoIds?.[0]
 
     render(<Settings />)
     fireEvent.click(screen.getByRole('button', { name: /Reset all data/i }))

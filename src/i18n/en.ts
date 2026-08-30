@@ -113,10 +113,14 @@ export const en = {
   'visit.photo': 'Photo',
   'visit.addPhoto': 'Add a photo',
   'visit.removePhoto': 'Remove photo',
-  'visit.photoLimit': '(optional, max {size})',
+  'visit.photoLimit': '(optional, up to {max}, max {size} each)',
   'visit.photoNotFound': 'Photo not found',
+  'visit.photosMissing#one': '1 photo is missing from this device',
+  'visit.photosMissing#other': '{count} photos are missing from this device',
   'visit.photoLoading': 'Loading photo…',
-  'visit.choose': 'Choose a photo',
+  'visit.choose': 'Choose photos',
+  'visit.chooseMore': 'Add more photos',
+  'visit.removePhotoAt': 'Remove photo {position}',
   'visit.save': 'Save trip',
   'visit.saving': 'Saving…',
   'visit.remove': 'Delete this trip',
@@ -219,13 +223,14 @@ export const en = {
   'settings.export.title': 'Export a backup',
   'settings.export.description':
     'Saves {countries} manually marked and {trips} to a JSON file you keep yourself.',
-  'settings.export.noPhotos': 'Photos are not included.',
-  'settings.export.noPhotosBody':
-    'The file holds countries, dates, cities and notes only.',
-  'settings.export.photosStay#one':
-    'The photo you attached stays on this device and will be lost if you clear your browser data.',
-  'settings.export.photosStay#other':
-    'The {count} photos you attached stay on this device and will be lost if you clear your browser data.',
+  'settings.export.withPhotos': 'Photos are included.',
+  'settings.export.photosIncluded#one':
+    'The file is a .zip with your 1 photo inside, next to countries, dates, cities and notes.',
+  'settings.export.photosIncluded#other':
+    'The file is a .zip with your {count} photos inside, next to countries, dates, cities and notes.',
+  'settings.export.noPhotosYet':
+    'The file is a .zip: countries, dates, cities and notes now, and your photos as soon as you add some.',
+  'settings.export.preparing': 'Preparing…',
   'settings.export.button': 'Export backup',
   'settings.export.nothing': 'Nothing to export yet — mark a country or add a trip first.',
   'settings.export.saved': 'Backup saved. Check your downloads folder.',
@@ -239,6 +244,10 @@ export const en = {
   'settings.import.reading': 'Reading…',
   'settings.import.rejected': 'This file was not imported. Your data is unchanged.',
   'settings.import.done': 'Imported {countries} and {trips}.',
+  'settings.import.photosRestored#one': '1 photo restored.',
+  'settings.import.photosRestored#other': '{count} photos restored.',
+  'settings.import.photosFound#one': 'It also contains 1 photo.',
+  'settings.import.photosFound#other': 'It also contains {count} photos.',
   'settings.import.confirmTitle': 'Replace all your data?',
   'settings.import.confirmBody': '{file} contains {countries} and {trips}.',
   'settings.import.confirmLoss':
@@ -295,6 +304,8 @@ export const en = {
   'validation.missingMarked': 'Missing "manuallyMarked" field, or it is not a list.',
   'validation.missingVisits': 'Missing "visits" field, or it is not a list.',
   'validation.readFailed': 'Could not read that file. Try picking it again.',
+  'validation.badArchive':
+    'This file could not be opened. Pick the .zip backup exported from this app, without unzipping it.',
   'validation.skippedCountries#one': '{count} country was skipped: unknown ISO code.',
   'validation.skippedCountries#other': '{count} countries were skipped: unknown ISO code.',
   'validation.skippedTrips#one': '{count} trip was skipped: incomplete or invalid data.',
@@ -304,5 +315,6 @@ export const en = {
   'photo.notImage': 'That file is not an image. Pick a JPEG, PNG, WebP, GIF or AVIF.',
   'photo.tooLarge': 'That photo is {size}, over the {limit} limit. Pick a smaller one.',
   'photo.unsupported': '{type} is not supported. Use JPEG, PNG, WebP, GIF or AVIF.',
+  'photo.tooMany': 'A trip can have at most {max} photos.',
   'photo.empty': 'That file is empty.',
 } as const

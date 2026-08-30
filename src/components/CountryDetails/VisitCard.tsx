@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { CalendarDays, ImageOff, MapPin, Trash2 } from 'lucide-react'
-import { usePhoto } from '../../hooks/usePhoto'
+import { usePhotos } from '../../hooks/usePhotos'
 import { useTranslation } from '../../i18n/useTranslation'
 import type { Visit } from '../../types'
 
@@ -12,7 +12,7 @@ interface VisitCardProps {
 /** Una riga della lista dei viaggi, con foto se presente. */
 export function VisitCard({ visit, onRemove }: VisitCardProps) {
   const { t, date } = useTranslation()
-  const { url, status } = usePhoto(visit.photoId)
+  const { urls, status, missing } = usePhotos(visit.photoIds)
   const [confirming, setConfirming] = useState(false)
 
   return (
@@ -67,21 +67,37 @@ export function VisitCard({ visit, onRemove }: VisitCardProps) {
         </p>
       )}
 
-      {visit.photoId && (
-        <div className="mt-2.5 overflow-hidden rounded-lg border border-edge">
-          {url !== null ? (
-            <img src={url} alt="" loading="lazy" className="h-36 w-full object-cover" />
-          ) : (
-            <div className="flex h-16 items-center justify-center gap-2 text-xs text-subtle">
-              {status === 'missing' ? (
-                <>
-                  <ImageOff size={14} aria-hidden />
-                  {t('visit.photoNotFound')}
-                </>
-              ) : (
-                t('visit.photoLoading')
-              )}
-            </div>
+      {(visit.photoIds?.length ?? 0) > 0 && (
+        <div className="mt-2.5">
+          {urls.length > 0 && (
+            <ul className={urls.length === 1 ? '' : 'grid grid-cols-3 gap-1.5'}>
+              {urls.map((url) => (
+                <li key={url} className="overflow-hidden rounded-lg border border-edge">
+                  <img
+                    src={url}
+                    alt=""
+                    loading="lazy"
+                    className={urls.length === 1 ? 'h-36 w-full object-cover' : 'h-20 w-full object-cover'}
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {/*
+            Un riferimento senza il suo Blob capita dopo un ripristino su un
+            dispositivo nuovo: si dice, invece di mostrare semplicemente meno
+            foto e lasciare il dubbio.
+          */}
+          {missing > 0 && (
+            <p className="mt-1.5 flex items-center gap-1.5 text-xs text-subtle">
+              <ImageOff size={13} aria-hidden />
+              {t('visit.photosMissing#', { count: missing })}
+            </p>
+          )}
+
+          {urls.length === 0 && missing === 0 && status === 'loading' && (
+            <p className="text-xs text-subtle">{t('visit.photoLoading')}</p>
           )}
         </div>
       )}

@@ -13,14 +13,17 @@ import {
   removeManuallyMarked,
   removeOrphanPhotos,
   removeVisit as removeVisitFromStorage,
+  loadAllPhotos,
   removeVisitsForCountry,
   replaceManuallyMarked,
+  restorePhoto,
   replaceVisits,
   requestPersistentStorage,
   savePhoto,
   saveVisit,
 } from '../services/storage'
 import { newId } from '../utils/id'
+import type { BackupBundle } from '../utils/backupFile'
 import { detectLanguage, isLanguage } from '../i18n/languages'
 import type { Language } from '../i18n/languages'
 import type { LocalizedMessage } from '../i18n/message'
@@ -60,11 +63,14 @@ export interface TravelStore extends TravelData {
   unmarkVisited: (code: string) => Promise<void>
   toggleVisited: (code: string) => Promise<void>
   forgetCountry: (code: string) => Promise<void>
-  /** `photo` viene salvata come Blob e collegata al viaggio via `photoId`. */
-  addVisit: (input: NewVisit, photo?: Blob | null) => Promise<Visit | null>
+  /** Le `photos` vengono salvate come Blob e collegate via `photoIds`. */
+  addVisit: (input: NewVisit, photos?: readonly Blob[]) => Promise<Visit | null>
   removeVisit: (id: string) => Promise<void>
-  importData: (raw: unknown) => Promise<ImportOutcome>
+  /** `photos` arriva dallo ZIP di backup: id -> Blob. */
+  importData: (raw: unknown, photos?: ReadonlyMap<string, Blob>) => Promise<ImportOutcome>
   exportData: () => TravelDataExport
+  /** Export completo, foto comprese. Asincrono perché le legge da IndexedDB. */
+  exportBackup: () => Promise<BackupBundle>
   resetData: () => Promise<void>
   setLanguage: (language: Language) => Promise<void>
   clearLastError: () => void
@@ -241,7 +247,7 @@ export const useTravelStore = create<TravelStore>((set, get) => {
       }
     },
 
-    addVisit: async (input, photo) => {
+    addVisit: async (input, photos) => {
       const countryCode = normalizeCode(input.countryCode)
       if (!isKnownCountryCode(countryCode)) {
         set({ lastError: { key: 'storage.unknownCountry', vars: { code: countryCode } } })
@@ -252,17 +258,19 @@ export const useTravelStore = create<TravelStore>((set, get) => {
         return null
       }
 
-      // La foto va salvata PRIMA del viaggio: serve il suo id per collegarla.
-      // Se l'archiviazione non c'è, il viaggio si aggiunge lo stesso senza
-      // foto e l'avviso spiega perché.
-      let photoId = input.photoId
-      if (photo) {
+      // Le foto vanno salvate PRIMA del viaggio: servono i loro id per
+      // collegarle. Se l'archiviazione non c'è, il viaggio si aggiunge lo
+      // stesso senza foto e l'avviso spiega perché.
+      let photoIds = input.photoIds ?? []
+      const incoming = photos ?? []
+      if (incoming.length > 0) {
         try {
-          photoId = await savePhoto(photo)
+          const saved = await Promise.all(incoming.map((photo) => savePhoto(photo)))
+          photoIds = [...photoIds, ...saved]
         } catch (error) {
           if (error instanceof StorageUnavailableError) {
             set({ storage: 'unavailable', storageMessage: STORAGE_UNAVAILABLE_MESSAGE })
-            photoId = undefined
+            photoIds = []
           } else {
             set({ lastError: { key: 'storage.photoFailed' } })
             return null
@@ -271,8 +279,8 @@ export const useTravelStore = create<TravelStore>((set, get) => {
       }
 
       const visit: Visit = { ...input, id: input.id ?? newId(), countryCode }
-      if (photoId === undefined) delete visit.photoId
-      else visit.photoId = photoId
+      if (photoIds.length === 0) delete visit.photoIds
+      else visit.photoIds = photoIds
 
       const previous = get().visits
       set({ visits: [visit, ...previous], lastError: null })
@@ -293,15 +301,15 @@ export const useTravelStore = create<TravelStore>((set, get) => {
 
       const outcome = await persist(async () => {
         await removeVisitFromStorage(id)
-        // La foto collegata non deve restare a occupare quota.
-        if (visit.photoId) await removeOrphanPhotos()
+        // Le foto collegate non devono restare a occupare quota.
+        if (visit.photoIds?.length) await removeOrphanPhotos()
       })
       if (outcome === 'failed') {
         set({ visits: previous })
       }
     },
 
-    importData: async (raw) => {
+    importData: async (raw, photos) => {
       const parsed = parseTravelData(raw)
       if (!parsed.ok) {
         set({ lastError: parsed.errors[0] ?? { key: 'storage.invalidFile' } })
@@ -316,6 +324,13 @@ export const useTravelStore = create<TravelStore>((set, get) => {
       })
 
       const outcome = await persist(async () => {
+        // Le foto vanno rimesse PRIMA di ripulire gli orfani, altrimenti la
+        // pulizia cancellerebbe proprio quelle appena ripristinate.
+        if (photos) {
+          for (const [id, blob] of photos) {
+            await restorePhoto(id, blob)
+          }
+        }
         await replaceManuallyMarked(parsed.data.manuallyMarked)
         await replaceVisits(parsed.data.visits)
         await removeOrphanPhotos()
@@ -340,6 +355,22 @@ export const useTravelStore = create<TravelStore>((set, get) => {
         exportedAt: new Date().toISOString(),
         manuallyMarked,
         visits,
+      }
+    },
+
+    /**
+     * Stato e foto insieme, pronti per essere impacchettati.
+     * Si esportano TUTTE le foto presenti, non solo quelle referenziate: se
+     * per un errore un riferimento si fosse perso, il backup e comunque il
+     * posto sbagliato dove buttare via l'immagine di qualcuno.
+     */
+    exportBackup: async () => {
+      const data = get().exportData()
+      try {
+        return { data, photos: await loadAllPhotos() }
+      } catch {
+        // Senza archiviazione si esporta comunque quello che c'e in memoria.
+        return { data, photos: [] }
       }
     },
 
