@@ -10,7 +10,7 @@ export function Sidebar() {
     <aside className="hidden w-60 shrink-0 flex-col border-r border-edge bg-base-800/60 pl-safe-l pt-safe-t lg:flex">
       <div className="px-5 py-6">
         <p className="text-sm font-semibold tracking-tight text-slate-100">World Travel Tracker</p>
-        <p className="mt-1 text-xs leading-relaxed text-slate-500">
+        <p className="mt-1 text-xs leading-relaxed text-muted">
           See where you’ve been.
           <br />
           Discover where you’ll go next.
@@ -51,7 +51,7 @@ export function Sidebar() {
         </ul>
       </nav>
 
-      <p className="px-5 py-4 text-[11px] text-slate-600">All your data stays on this device.</p>
+      <p className="px-5 py-4 text-[11px] text-subtle">All your data stays on this device.</p>
     </aside>
   )
 }

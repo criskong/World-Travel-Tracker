@@ -22,9 +22,9 @@ function today(): string {
 
 const FIELD_CLASS =
   'w-full rounded-xl border border-edge bg-base-900 px-3 py-2 text-sm text-slate-200 ' +
-  'placeholder:text-slate-600 transition-colors focus:border-accent/50'
+  'placeholder:text-subtle transition-colors focus:border-accent/50'
 
-const LABEL_CLASS = 'text-xs font-medium text-slate-500'
+const LABEL_CLASS = 'text-xs font-medium text-muted'
 
 /**
  * Form di aggiunta viaggio.
@@ -136,7 +136,7 @@ export function AddVisitForm({ countryCode, onDone, onCancel }: AddVisitFormProp
 
         <div>
           <label htmlFor="visit-city" className={LABEL_CLASS}>
-            City <span className="text-slate-600">(optional)</span>
+            City <span className="text-subtle">(optional)</span>
           </label>
           <input
             id="visit-city"
@@ -151,7 +151,7 @@ export function AddVisitForm({ countryCode, onDone, onCancel }: AddVisitFormProp
 
         <div>
           <label htmlFor="visit-note" className={LABEL_CLASS}>
-            Note <span className="text-slate-600">(optional)</span>
+            Note <span className="text-subtle">(optional)</span>
           </label>
           <textarea
             id="visit-note"
@@ -166,13 +166,13 @@ export function AddVisitForm({ countryCode, onDone, onCancel }: AddVisitFormProp
 
         <div>
           <span className={LABEL_CLASS}>
-            Photo <span className="text-slate-600">(optional, max {formatBytes(MAX_PHOTO_BYTES)})</span>
+            Photo <span className="text-subtle">(optional, max {formatBytes(MAX_PHOTO_BYTES)})</span>
           </span>
 
           {previewUrl === null ? (
             <label
               htmlFor="visit-photo"
-              className="mt-1 flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-edge-strong px-3 py-2.5 text-sm text-slate-500 transition-colors hover:border-accent/40 hover:text-slate-400"
+              className="mt-1 flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-edge-strong px-3 py-2.5 text-sm text-muted transition-colors hover:border-accent/40 hover:text-slate-400"
             >
               <ImagePlus size={16} aria-hidden />
               Choose a photo

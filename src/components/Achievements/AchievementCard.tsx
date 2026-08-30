@@ -29,7 +29,7 @@ export function AchievementCard({ achievement }: { achievement: Achievement }) {
     >
       <div
         className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
-          unlocked ? 'bg-accent/15 text-accent' : 'bg-white/5 text-slate-600'
+          unlocked ? 'bg-accent/15 text-accent' : 'bg-white/5 text-subtle'
         }`}
       >
         <Icon size={20} strokeWidth={1.7} aria-hidden />
@@ -47,11 +47,11 @@ export function AchievementCard({ achievement }: { achievement: Achievement }) {
           {unlocked ? (
             <Check size={14} className="shrink-0 text-accent" aria-label="Unlocked" />
           ) : (
-            <Lock size={12} className="shrink-0 text-slate-600" aria-label="Locked" />
+            <Lock size={12} className="shrink-0 text-subtle" aria-label="Locked" />
           )}
         </div>
 
-        <p className="mt-0.5 text-xs text-slate-500">{achievement.description}</p>
+        <p className="mt-0.5 text-xs text-muted">{achievement.description}</p>
 
         {unlocked ? (
           <p className="mt-2 text-xs text-accent">{achievement.detail}</p>
@@ -62,7 +62,7 @@ export function AchievementCard({ achievement }: { achievement: Achievement }) {
               label={`${achievement.name}: ${achievement.detail}`}
               tone="muted"
             />
-            <span className="shrink-0 text-xs tabular-nums text-slate-500">
+            <span className="shrink-0 text-xs tabular-nums text-muted">
               {achievement.current}/{achievement.target}
             </span>
           </div>

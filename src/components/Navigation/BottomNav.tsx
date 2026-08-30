@@ -20,7 +20,7 @@ export function BottomNav() {
               className={({ isActive }) =>
                 [
                   'flex h-full flex-col items-center gap-1 rounded-lg px-1 py-2 text-[10px] transition-colors duration-150',
-                  isActive ? 'text-accent' : 'text-slate-500',
+                  isActive ? 'text-accent' : 'text-muted',
                 ].join(' ')
               }
             >

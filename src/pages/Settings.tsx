@@ -54,7 +54,7 @@ export default function Settings() {
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 pb-10 pt-5 sm:px-6">
       <header>
         <h1 className="text-lg font-semibold tracking-tight text-slate-100">Settings</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-muted">
           Your data never leaves this device. Back it up yourself, or start over.
         </p>
       </header>
@@ -108,7 +108,7 @@ function SectionCard({
         <span className={tone === 'danger' ? 'text-red-400' : 'text-accent'}>{icon}</span>
         <h2 className="text-sm font-semibold tracking-tight text-slate-100">{title}</h2>
       </div>
-      <p className="mt-2 text-sm leading-relaxed text-slate-500">{description}</p>
+      <p className="mt-2 text-sm leading-relaxed text-muted">{description}</p>
       {children}
     </section>
   )
@@ -220,11 +220,11 @@ function ExportSection({
           <Download size={15} aria-hidden />
           Export backup
         </ActionButton>
-        <span className="font-mono text-xs text-slate-600">{BACKUP_FILENAME}</span>
+        <span className="font-mono text-xs text-subtle">{BACKUP_FILENAME}</span>
       </div>
 
       {isEmpty && (
-        <p className="mt-3 text-xs text-slate-600">
+        <p className="mt-3 text-xs text-subtle">
           Nothing to export yet — mark a country or add a trip first.
         </p>
       )}
@@ -374,7 +374,7 @@ function ImportSection({
             Replace all your data?
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-slate-400">
-            <span className="font-mono text-xs text-slate-500">{pending.fileName}</span> contains{' '}
+            <span className="font-mono text-xs text-muted">{pending.fileName}</span> contains{' '}
             <strong className="font-semibold text-slate-200">
               {pending.data.manuallyMarked.length}{' '}
               {pending.data.manuallyMarked.length === 1 ? 'country' : 'countries'}
@@ -393,7 +393,7 @@ function ImportSection({
               {currentTrips === 1 ? 'trip' : 'trips'}. They cannot be recovered afterwards.
             </p>
           ) : (
-            <p className="mt-3 text-sm text-slate-500">
+            <p className="mt-3 text-sm text-muted">
               You have nothing saved right now, so nothing will be lost.
             </p>
           )}
@@ -462,7 +462,7 @@ function ResetSection({
       </div>
 
       {isEmpty && !done && (
-        <p className="mt-3 text-xs text-slate-600">Nothing stored — there is nothing to reset.</p>
+        <p className="mt-3 text-xs text-subtle">Nothing stored — there is nothing to reset.</p>
       )}
 
       {done && (
@@ -490,7 +490,7 @@ function ResetSection({
             )}
             . It cannot be undone.
           </p>
-          <p className="mt-3 text-sm text-slate-500">
+          <p className="mt-3 text-sm text-muted">
             If you might want this back, cancel and export a backup first.
           </p>
 
@@ -522,7 +522,7 @@ function StorageSection({
       {storage === 'unavailable' ? (
         <Notice tone="error">{message ?? 'Local storage is unavailable in this browser.'}</Notice>
       ) : (
-        <p className="mt-3 text-xs text-slate-600">
+        <p className="mt-3 text-xs text-subtle">
           Local storage is working. Clearing your browser data, or uninstalling the app, deletes
           everything — a backup file is the only copy that survives.
         </p>

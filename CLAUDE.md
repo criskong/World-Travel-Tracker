@@ -327,6 +327,68 @@ export, non dopo il download. Restano `Blob` in IndexedDB: un JSON con le
 immagini in base64 sarebbe enorme e violerebbe il vincolo "mai base64".
 Per contro `resetData` le cancella insieme al resto: nessun Blob orfano.
 
+### PWA, aggiornamenti e persistenza del globo (fase 6)
+
+**Il globo non passa dall'`<Outlet>`.** Home e montata stabilmente in
+`AppLayout` e viene solo nascosta quando si naviga altrove. Con la Home dentro
+l'Outlet, react-router la smontava a ogni cambio pagina e tornare sulla home
+significava ricostruire 610 mesh e un contesto WebGL da capo: ~300 ms su
+desktop, molti di piu su telefono, ogni volta. Conseguenze da tenere presenti:
+
+- `<Route index element={null} />` non e una svista: la rotta serve solo a far
+  combaciare `/` con il layout.
+- `GlobeView` conserva l'ultima dimensione valida, perche a Home nascosta il
+  contenitore misura 0x0 e smontare `<Globe>` li vanificherebbe tutto.
+- Le stesse misure a zero fanno da segnale di "non si vede": il ciclo di
+  rendering si mette in pausa da solo. Non serve passare nessuna prop.
+- `AppLayout.test.tsx` conta i montaggi e fallisce se il globo si rimonta.
+
+**Aggiornamento del service worker: `prompt`, non `autoUpdate`.** La versione
+nuova si scarica in silenzio e resta in attesa; l'utente decide quando
+ricaricare. Un reload automatico mentre si sta scrivendo la nota di un viaggio
+la butterebbe via.
+
+**La build verifica il precache.** `scripts/check-precache.mjs` gira dentro
+`npm run build`: stampa il manifest Workbox e fallisce se un file della build
+ne resta fuori, se una voce punta a un file inesistente o se un URL compare
+due volte con revision diverse. Serve perche il modo in cui l'offline si
+rompe e sempre silenzioso.
+
+**Niente `includeAssets`.** Quello che sta in `public/` finisce in `dist/` e lo
+raccoglie gia `globPatterns`; elencarlo anche li produceva URL duplicati. Per
+lo stesso motivo `png` e `webmanifest` non sono nei pattern: il manifest e le
+icone che dichiara li aggiunge il plugin.
+
+**Contrasto: mai `text-slate-500` o `text-slate-600`.** Misurati contro
+`base-900` danno 4,23:1 e 2,66:1, sotto la soglia WCAG AA di 4,5:1 per il
+testo normale. Al loro posto i token `muted` (6,29:1) e `subtle` (5,24:1).
+`src/styles/palette.test.ts` ricontrolla i rapporti a ogni run: e facile
+scrivere `text-slate-600` per abitudine e non accorgersi di niente guardando
+lo schermo di un portatile al buio.
+
+**`Cache-Control: immutable` su `/data/*.geojson` regge solo perche il nome
+del file identifica il dataset.** Se un giorno se ne modificasse il contenuto
+senza rinominarlo, quell'header lo congelerebbe per un anno nei browser.
+Rinominare, sempre — la costante sta in `dataset.ts`.
+
+### Domanda aperta: la doppia cache del GeoJSON (fase 6)
+
+Con il precache del service worker attivo, il dataset e in cache due volte:
+in Cache Storage (3,0 MB) e in IndexedDB via Dexie (3,0 MB). La copia Dexie e
+anche **prima nel percorso critico**: `readDataset()` la interroga sempre,
+anche quando il service worker risponderebbe da Cache Storage senza toccare
+la rete.
+
+Non e pero pura ridondanza: i service worker esistono solo in contesto sicuro,
+quindi sul server di sviluppo raggiunto via IP di rete — cioe il modo in cui
+l'app viene provata sul telefono — il service worker non c'e e Dexie e
+l'unica cache.
+
+Proposta non ancora applicata: saltare Dexie quando
+`navigator.serviceWorker.controller` non e nullo, cioe quando il service
+worker sta gia servendo la pagina. Toglie la duplicazione in produzione e
+lascia la cache dove serve. **Da non implementare senza conferma.**
+
 ### Archiviazione non disponibile (decisa in fase 2)
 
 Quando IndexedDB non è utilizzabile (Safari in navigazione privata) l'app non

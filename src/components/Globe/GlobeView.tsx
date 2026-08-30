@@ -1,5 +1,6 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import Globe from 'react-globe.gl'
+import type { GlobeMethods } from 'react-globe.gl'
 import { Color, MeshPhongMaterial } from 'three'
 import { loadCountryPolygons } from '../../data/countries/geoData'
 import type { CountryPolygon } from '../../data/countries/geoData'
@@ -56,7 +57,32 @@ let mountCount = 0
  */
 function GlobeViewComponent({ onSelectCountry, selectedIso }: GlobeViewProps) {
   const containerRef = useRef<HTMLDivElement>(null)
+  const globeRef = useRef<GlobeMethods | undefined>(undefined)
   const { width, height } = useElementSize(containerRef)
+
+  /**
+   * Quando Home viene nascosta — l'utente naviga su un'altra pagina — il
+   * contenitore misura 0x0. Se `<Globe>` si smontasse lì, al ritorno
+   * andrebbero ricostruite tutte le mesh: ~300 ms e un contesto WebGL nuovo.
+   * Si tiene quindi l'ultima dimensione valida, e il globo resta in vita.
+   */
+  const [stableSize, setStableSize] = useState({ width: 0, height: 0 })
+  useEffect(() => {
+    if (width > 0 && height > 0) setStableSize({ width, height })
+  }, [width, height])
+
+  /**
+   * Le stesse misure a zero dicono anche che il globo non si vede: si ferma
+   * il ciclo di rendering invece di disegnare a vuoto trenta volte al secondo
+   * mentre l'utente guarda le statistiche.
+   */
+  const onScreen = width > 0 && height > 0
+  useEffect(() => {
+    const globe = globeRef.current
+    if (!globe) return
+    if (onScreen) globe.resumeAnimation()
+    else globe.pauseAnimation()
+  }, [onScreen])
 
   const [geo, setGeo] = useState<GeoState>({ status: 'loading' })
   const [hovered, setHovered] = useState<CountryPolygon | null>(null)
@@ -212,10 +238,11 @@ function GlobeViewComponent({ onSelectCountry, selectedIso }: GlobeViewProps) {
 
   return (
     <div ref={containerRef} className="relative h-full w-full overflow-hidden bg-base-900">
-      {width > 0 && height > 0 && (
+      {stableSize.width > 0 && stableSize.height > 0 && (
         <Globe
-          width={width}
-          height={height}
+          ref={globeRef}
+          width={stableSize.width}
+          height={stableSize.height}
           backgroundColor={COLOR_BACKGROUND}
           globeImageUrl={null}
           showAtmosphere

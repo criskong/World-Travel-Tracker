@@ -95,14 +95,14 @@ export function CountryDetails({ code, onClose }: CountryDetailsProps) {
             <h2 className="truncate text-base font-semibold tracking-tight text-slate-100">
               {country.name}
             </h2>
-            <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-slate-500">
+            <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted">
               <span>{country.continent}</span>
               <span aria-hidden>·</span>
               <span className="font-mono tracking-wider">{country.code}</span>
               {!isUnMember(country.code) && (
                 <span
                   title="Not a UN member state — not counted in the 195"
-                  className="rounded-full border border-edge px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-slate-500"
+                  className="rounded-full border border-edge px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted"
                 >
                   Territory
                 </span>
@@ -115,7 +115,7 @@ export function CountryDetails({ code, onClose }: CountryDetailsProps) {
             type="button"
             onClick={onClose}
             aria-label="Close details"
-            className="-mr-1 -mt-1 shrink-0 rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-surface-raised hover:text-slate-300"
+            className="-mr-1 -mt-1 shrink-0 rounded-lg p-1.5 text-muted transition-colors hover:bg-surface-raised hover:text-slate-300"
           >
             <X size={16} aria-hidden />
           </button>
@@ -127,7 +127,7 @@ export function CountryDetails({ code, onClose }: CountryDetailsProps) {
               className={
                 visited
                   ? 'inline-flex items-center gap-1.5 rounded-full bg-accent-dim px-2.5 py-1 text-xs font-medium text-accent'
-                  : 'inline-flex items-center gap-1.5 rounded-full border border-edge px-2.5 py-1 text-xs text-slate-500'
+                  : 'inline-flex items-center gap-1.5 rounded-full border border-edge px-2.5 py-1 text-xs text-muted'
               }
             >
               {visited && <Check size={12} aria-hidden />}
@@ -149,7 +149,7 @@ export function CountryDetails({ code, onClose }: CountryDetailsProps) {
           </button>
 
           <div className="mt-6 flex items-baseline justify-between gap-3">
-            <h3 className="text-xs font-medium uppercase tracking-wider text-slate-500">
+            <h3 className="text-xs font-medium uppercase tracking-wider text-muted">
               Trips {countryVisits.length > 0 && `(${countryVisits.length})`}
             </h3>
             {!addingVisit && (
@@ -176,7 +176,7 @@ export function CountryDetails({ code, onClose }: CountryDetailsProps) {
 
           {countryVisits.length === 0 ? (
             !addingVisit && (
-              <p className="mt-3 rounded-xl border border-dashed border-edge px-3 py-4 text-center text-xs leading-relaxed text-slate-500">
+              <p className="mt-3 rounded-xl border border-dashed border-edge px-3 py-4 text-center text-xs leading-relaxed text-muted">
                 No trips recorded yet.
                 <br />
                 Add one to remember when you were here.

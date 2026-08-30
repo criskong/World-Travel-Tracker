@@ -2,7 +2,6 @@ import { Suspense, lazy, useEffect } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import { AppLayout } from './components/Navigation/AppLayout'
 import { useTravelStore } from './store/travelStore'
-import Home from './pages/Home'
 
 // Code splitting per route: solo la Home entra nel chunk iniziale, perché è
 // quella che l'utente vede sempre per prima.
@@ -15,7 +14,7 @@ const NotFound = lazy(() => import('./pages/NotFound'))
 
 function RouteFallback() {
   return (
-    <div className="flex min-h-full items-center justify-center py-16 text-sm text-slate-600">
+    <div className="flex min-h-full items-center justify-center py-16 text-sm text-subtle">
       Loading…
     </div>
   )
@@ -33,7 +32,12 @@ export default function App() {
   return (
     <Routes>
       <Route element={<AppLayout />}>
-        <Route index element={<Home />} />
+        {/*
+          Home e montata stabilmente dentro AppLayout, non qui: il globo non
+          deve smontarsi a ogni navigazione. Questa rotta serve solo a far
+          combaciare "/" con il layout.
+        */}
+        <Route index element={null} />
         <Route
           path="countries"
           element={

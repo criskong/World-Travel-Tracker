@@ -19,6 +19,14 @@ export default {
           DEFAULT: 'rgba(148, 163, 184, 0.12)',
           strong: 'rgba(148, 163, 184, 0.22)',
         },
+        /*
+         * Testo secondario. Non si usano slate-500 e slate-600: misurati
+         * contro base-900 danno 4,23:1 e 2,66:1, cioe sotto la soglia WCAG AA
+         * di 4,5:1 per il testo normale. Questi due la superano mantenendo la
+         * gerarchia. `src/index.contrast.test.ts` li ricontrolla a ogni run.
+         */
+        muted: '#8291a6',
+        subtle: '#74839a',
         accent: {
           DEFAULT: '#38bdf8',
           soft: '#0ea5e9',

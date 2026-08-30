@@ -19,12 +19,12 @@ export function VisitCard({ visit, onRemove }: VisitCardProps) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="flex items-center gap-1.5 text-sm font-medium text-slate-200">
-            <CalendarDays size={13} className="shrink-0 text-slate-500" aria-hidden />
+            <CalendarDays size={13} className="shrink-0 text-muted" aria-hidden />
             {formatVisitDate(visit.date)}
           </p>
           {visit.city && (
             <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-400">
-              <MapPin size={12} className="shrink-0 text-slate-600" aria-hidden />
+              <MapPin size={12} className="shrink-0 text-subtle" aria-hidden />
               {visit.city}
             </p>
           )}
@@ -53,7 +53,7 @@ export function VisitCard({ visit, onRemove }: VisitCardProps) {
               type="button"
               onClick={() => setConfirming(true)}
               aria-label="Delete this trip"
-              className="shrink-0 rounded-lg p-1.5 text-slate-600 transition-colors hover:bg-surface-raised hover:text-red-300"
+              className="shrink-0 rounded-lg p-1.5 text-subtle transition-colors hover:bg-surface-raised hover:text-red-300"
             >
               <Trash2 size={14} aria-hidden />
             </button>
@@ -71,7 +71,7 @@ export function VisitCard({ visit, onRemove }: VisitCardProps) {
           {url !== null ? (
             <img src={url} alt="" loading="lazy" className="h-36 w-full object-cover" />
           ) : (
-            <div className="flex h-16 items-center justify-center gap-2 text-xs text-slate-600">
+            <div className="flex h-16 items-center justify-center gap-2 text-xs text-subtle">
               {status === 'missing' ? (
                 <>
                   <ImageOff size={14} aria-hidden />

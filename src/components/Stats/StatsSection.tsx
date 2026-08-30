@@ -47,7 +47,7 @@ export function StatsSection() {
         />
       </div>
 
-      <h2 className="mt-6 text-xs font-medium uppercase tracking-wider text-slate-500">
+      <h2 className="mt-6 text-xs font-medium uppercase tracking-wider text-muted">
         By continent
       </h2>
       <ul className="mt-3 flex flex-col gap-2.5">
@@ -71,15 +71,15 @@ interface StatTileProps {
 function StatTile({ icon, label, value, suffix }: StatTileProps) {
   return (
     <div className="card p-4">
-      <p className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
-        <span className="text-slate-600">{icon}</span>
+      <p className="flex items-center gap-1.5 text-xs font-medium text-muted">
+        <span className="text-subtle">{icon}</span>
         {label}
       </p>
       <p className="mt-2 flex items-baseline gap-1.5">
         <span className="text-2xl font-semibold tabular-nums tracking-tight text-slate-100">
           {value}
         </span>
-        <span className="text-xs text-slate-500">{suffix}</span>
+        <span className="text-xs text-muted">{suffix}</span>
       </p>
     </div>
   )
@@ -101,7 +101,7 @@ function ContinentRow({ stat }: { stat: ContinentStat }) {
           style={{ width: `${stat.percentage}%` }}
         />
       </div>
-      <span className="w-14 shrink-0 text-right text-xs tabular-nums text-slate-500">
+      <span className="w-14 shrink-0 text-right text-xs tabular-nums text-muted">
         {stat.visited}/{stat.total}
       </span>
     </div>
@@ -118,11 +118,11 @@ function EmptyState() {
       <h2 className="mt-4 text-base font-semibold tracking-tight text-slate-100">
         Your world is still waiting
       </h2>
-      <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-slate-500">
+      <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted">
         Spin the globe and tap a country to open its details. Mark it as visited from
         there, and your numbers will show up here.
       </p>
-      <p className="mt-4 text-xs text-slate-600">0 / 195 countries · 0% of the world</p>
+      <p className="mt-4 text-xs text-subtle">0 / 195 countries · 0% of the world</p>
     </section>
   )
 }

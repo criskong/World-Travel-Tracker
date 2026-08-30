@@ -20,13 +20,13 @@ export function RecentTrips() {
   return (
     <section aria-label="Recent trips" className="animate-fade-up">
       <div className="flex items-baseline justify-between gap-3">
-        <h2 className="text-xs font-medium uppercase tracking-wider text-slate-500">
+        <h2 className="text-xs font-medium uppercase tracking-wider text-muted">
           Recent trips
         </h2>
         {recent.length > 0 && (
           <Link
             to="/trips"
-            className="flex items-center gap-0.5 text-xs text-slate-500 transition-colors hover:text-accent"
+            className="flex items-center gap-0.5 text-xs text-muted transition-colors hover:text-accent"
           >
             All trips
             <ChevronRight size={13} aria-hidden />
@@ -37,9 +37,9 @@ export function RecentTrips() {
       {recent.length === 0 ? (
         <div className="card mt-3 flex items-center gap-3 px-4 py-5">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-edge">
-            <Plane size={16} strokeWidth={1.6} className="text-slate-600" aria-hidden />
+            <Plane size={16} strokeWidth={1.6} className="text-subtle" aria-hidden />
           </div>
-          <p className="text-sm leading-relaxed text-slate-500">
+          <p className="text-sm leading-relaxed text-muted">
             No trips recorded yet. Add one from a country’s details to see it here.
           </p>
         </div>
@@ -53,9 +53,9 @@ export function RecentTrips() {
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-slate-200">
                   {country?.name ?? visit.countryCode}
-                  {visit.city && <span className="text-slate-500"> · {visit.city}</span>}
+                  {visit.city && <span className="text-muted"> · {visit.city}</span>}
                 </p>
-                <p className="mt-0.5 flex items-center gap-1 text-xs text-slate-500">
+                <p className="mt-0.5 flex items-center gap-1 text-xs text-muted">
                   <CalendarDays size={12} aria-hidden />
                   {formatVisitDate(visit.date)}
                 </p>

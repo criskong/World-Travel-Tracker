@@ -7,8 +7,19 @@ interface ModalProps {
   children: ReactNode
 }
 
+/** Elementi che possono ricevere il fuoco da tastiera. */
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+
 /**
- * Modal minima.
+ * Modal minima, ma con la tastiera che funziona davvero.
+ *
+ * Tre comportamenti che una modal deve avere e che non arrivano gratis:
+ * - Esc chiude;
+ * - il fuoco entra nel pannello e non ne esce con Tab (senza trappola si
+ *   finisce a navigare la pagina dietro, che per chi non vede il velo scuro
+ *   significa perdersi del tutto);
+ * - alla chiusura il fuoco torna dov'era, non all'inizio del documento.
  *
  * Lo sfondo è un velo tinto, NON sfocato: su Home la modal si apre sopra il
  * canvas WebGL, e un `backdrop-blur` a schermo intero lì costa un'intera
@@ -18,17 +29,45 @@ export function Modal({ title, onClose, children }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [onClose])
+    // Chi aveva il fuoco prima: ci torna quando la modal si chiude.
+    const previouslyFocused = document.activeElement as HTMLElement | null
+    const panel = panelRef.current
 
-  useEffect(() => {
-    // Il primo elemento focusabile del pannello, così la tastiera entra dentro.
-    panelRef.current?.querySelector<HTMLElement>('button, [href], input, select, textarea')?.focus()
-  }, [])
+    panel?.querySelector<HTMLElement>(FOCUSABLE)?.focus()
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.stopPropagation()
+        onClose()
+        return
+      }
+      if (event.key !== 'Tab' || !panel) return
+
+      const focusable = [...panel.querySelectorAll<HTMLElement>(FOCUSABLE)]
+      if (focusable.length === 0) {
+        event.preventDefault()
+        return
+      }
+      const first = focusable[0]!
+      const last = focusable[focusable.length - 1]!
+      const active = document.activeElement
+
+      // Il giro si chiude su sé stesso: dall'ultimo si torna al primo.
+      if (event.shiftKey && (active === first || !panel.contains(active))) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && (active === last || !panel.contains(active))) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      window.removeEventListener('keydown', onKeyDown)
+      previouslyFocused?.focus?.()
+    }
+  }, [onClose])
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">
@@ -36,6 +75,9 @@ export function Modal({ title, onClose, children }: ModalProps) {
         type="button"
         aria-label="Close"
         onClick={onClose}
+        // Fuori dal giro del Tab: è il velo, non un comando da raggiungere
+        // con la tastiera, che per chiudere ha già Esc.
+        tabIndex={-1}
         className="absolute inset-0 cursor-default bg-black/70 animate-fade-in"
       />
       <div

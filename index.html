@@ -2,10 +2,33 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <title>World Travel Tracker — Track Your Adventures</title>
+    <meta
+      name="description"
+      content="Track the countries you have visited on an interactive 3D globe. See where you've been, discover where you'll go next. Works offline, stores everything on your device, no account needed."
+    />
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <meta name="theme-color" content="#05070c" />
-    <title>World Travel Tracker</title>
+
+    <!-- Standalone su iOS: senza questi la barra di stato resta chiara sopra
+         un'app scura, e il ritaglio della safe area non combacia. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Travel Tracker" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="World Travel Tracker" />
+    <meta
+      property="og:description"
+      content="See where you've been. Discover where you'll go next."
+    />
+    <meta property="og:image" content="/icons/icon-512.png" />
+    <meta name="twitter:card" content="summary" />
   </head>
   <body>
     <div id="root"></div>

@@ -41,13 +41,13 @@ export const CountryRow = memo(function CountryRow({
             {isTerritory(country) && (
               <span
                 title="Not a UN member state — not counted in the 195"
-                className="shrink-0 rounded-full border border-edge px-1.5 text-[10px] uppercase tracking-wide text-slate-600"
+                className="shrink-0 rounded-full border border-edge px-1.5 text-[10px] uppercase tracking-wide text-subtle"
               >
                 Territory
               </span>
             )}
           </span>
-          <span className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500">
+          <span className="mt-0.5 flex items-center gap-1.5 text-xs text-muted">
             <span>{country.continent}</span>
             <span aria-hidden>·</span>
             <span className="font-mono tracking-wider">{country.code}</span>
@@ -72,7 +72,7 @@ export const CountryRow = memo(function CountryRow({
         <ChevronRight
           size={15}
           aria-hidden
-          className="shrink-0 text-slate-700 transition-colors group-hover:text-slate-500"
+          className="shrink-0 text-slate-700 transition-colors group-hover:text-muted"
         />
       </button>
     </li>

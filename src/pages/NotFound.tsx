@@ -7,7 +7,7 @@ export default function NotFound() {
       <h1 className="mt-4 text-lg font-semibold tracking-tight text-slate-100">
         This page does not exist
       </h1>
-      <p className="mt-2 text-sm text-slate-500">
+      <p className="mt-2 text-sm text-muted">
         That address doesn’t match any section of the app.
       </p>
       <Link

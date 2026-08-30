@@ -52,7 +52,7 @@ export function RemoveVisitedDialog({
             className="flex items-baseline justify-between gap-3 border-b border-edge px-3 py-2 text-sm last:border-b-0"
           >
             <span className="truncate text-slate-300">{visit.city || country.name}</span>
-            <span className="shrink-0 text-xs tabular-nums text-slate-500">
+            <span className="shrink-0 text-xs tabular-nums text-muted">
               {formatVisitDate(visit.date)}
             </span>
           </li>

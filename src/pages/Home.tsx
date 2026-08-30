@@ -1,4 +1,6 @@
 import { Suspense, lazy, useCallback, useState } from 'react'
+import { Globe2, RefreshCw } from 'lucide-react'
+import { ErrorBoundary } from '../components/UI/ErrorBoundary'
 import { CountryDetails } from '../components/CountryDetails/CountryDetails'
 import { StatsSection } from '../components/Stats/StatsSection'
 import { RecentTrips } from '../components/Timeline/RecentTrips'
@@ -33,7 +35,7 @@ export default function Home() {
         <h1 className="text-lg font-semibold tracking-tight text-slate-100">
           World Travel Tracker
         </h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-muted">
           See where you’ve been. Discover where you’ll go next.
         </p>
       </header>
@@ -42,15 +44,22 @@ export default function Home() {
         aria-label="Interactive globe"
         className="relative h-[52vh] min-h-[340px] overflow-hidden rounded-2xl border border-edge bg-base-900 shadow-card sm:h-[58vh]"
       >
-        <Suspense
-          fallback={
-            <div className="flex h-full w-full items-center justify-center text-sm text-slate-600">
-              Loading the globe…
-            </div>
-          }
-        >
-          <GlobeView onSelectCountry={handleSelectCountry} selectedIso={selectedIso} />
-        </Suspense>
+        {/*
+          Il globo dipende da WebGL, che puo mancare: driver vecchi,
+          accelerazione disattivata, troppi contesti aperti. Se salta, il
+          confine tiene in piedi tutto il resto della pagina.
+        */}
+        <ErrorBoundary label="globe" fallback={(retry) => <GlobeUnavailable onRetry={retry} />}>
+          <Suspense
+            fallback={
+              <div className="flex h-full w-full items-center justify-center text-sm text-subtle">
+                Loading the globe…
+              </div>
+            }
+          >
+            <GlobeView onSelectCountry={handleSelectCountry} selectedIso={selectedIso} />
+          </Suspense>
+        </ErrorBoundary>
 
         {selectedIso !== null && (
           /*
@@ -65,6 +74,35 @@ export default function Home() {
 
       <StatsSection />
       <RecentTrips />
+    </div>
+  )
+}
+
+/**
+ * Il globo non si e potuto disegnare. Nessuno stack trace: si dice cosa e
+ * successo, che il resto funziona lo stesso, e si offre un tentativo.
+ */
+function GlobeUnavailable({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="flex h-full w-full flex-col items-center justify-center gap-3 px-6 text-center">
+      <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-edge bg-surface">
+        <Globe2 size={22} strokeWidth={1.6} className="text-muted" aria-hidden />
+      </span>
+      <div>
+        <p className="text-sm font-medium text-slate-200">The globe could not be displayed</p>
+        <p className="mx-auto mt-1 max-w-xs text-xs leading-relaxed text-muted">
+          Your browser may not support 3D graphics, or they may be turned off. Everything else
+          still works: use the Countries page to mark where you have been.
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="inline-flex items-center gap-2 rounded-xl border border-edge-strong bg-surface-raised px-3.5 py-1.5 text-sm text-slate-200 transition-colors hover:border-accent/40 hover:text-accent"
+      >
+        <RefreshCw size={14} aria-hidden />
+        Try again
+      </button>
     </div>
   )
 }

@@ -21,7 +21,7 @@ export default function Trips() {
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 pb-10 pt-5 sm:px-6">
       <header>
         <h1 className="text-lg font-semibold tracking-tight text-slate-100">Trips</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-muted">
           {visits.length === 0
             ? 'Everywhere you’ve been, in order.'
             : `${visits.length} ${visits.length === 1 ? 'trip' : 'trips'} across ${years.length} ${
@@ -41,7 +41,7 @@ export default function Trips() {
                   {group.year}
                 </h2>
                 <span className="h-px flex-1 bg-edge" />
-                <span className="text-xs tabular-nums text-slate-600">
+                <span className="text-xs tabular-nums text-subtle">
                   {group.entries.length} {group.entries.length === 1 ? 'trip' : 'trips'}
                 </span>
               </div>
@@ -86,7 +86,7 @@ function TimelineRow({
           <span className="block truncate text-sm font-medium text-slate-200">
             {country?.name ?? visit.countryCode}
           </span>
-          <span className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-slate-500">
+          <span className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted">
             <span className="tabular-nums">{formatVisitDate(visit.date)}</span>
             {visit.city && (
               <>
@@ -127,7 +127,7 @@ function EmptyState() {
       <h2 className="mt-4 text-base font-semibold tracking-tight text-slate-100">
         No trips yet
       </h2>
-      <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-slate-500">
+      <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted">
         Open a country from the globe or from the Countries list, then add a visit with the date,
         the city and a photo. They will show up here, newest first.
       </p>

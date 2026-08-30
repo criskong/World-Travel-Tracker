@@ -29,7 +29,7 @@ export default function Statistics() {
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 pb-10 pt-5 sm:px-6">
       <header>
         <h1 className="text-lg font-semibold tracking-tight text-slate-100">Statistics</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-muted">
           {nothingYet
             ? 'Numbers will appear here as soon as you mark your first country.'
             : `${stats.visitedCount} of ${stats.totalCount} countries · ${stats.worldPercentage}% of the world`}
@@ -88,15 +88,15 @@ interface TileProps {
 function Tile({ icon, label, value, suffix }: TileProps) {
   return (
     <div className="card p-4">
-      <p className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
-        <span className="text-slate-600">{icon}</span>
+      <p className="flex items-center gap-1.5 text-xs font-medium text-muted">
+        <span className="text-subtle">{icon}</span>
         {label}
       </p>
       <p className="mt-2 flex items-baseline gap-1.5">
         <span className="text-2xl font-semibold tabular-nums tracking-tight text-slate-100">
           {value}
         </span>
-        <span className="text-xs text-slate-500">{suffix}</span>
+        <span className="text-xs text-muted">{suffix}</span>
       </p>
     </div>
   )
@@ -105,8 +105,8 @@ function Tile({ icon, label, value, suffix }: TileProps) {
 function SectionTitle({ children, hint }: { children: React.ReactNode; hint?: string }) {
   return (
     <div className="flex items-baseline justify-between gap-3">
-      <h2 className="text-xs font-medium uppercase tracking-wider text-slate-500">{children}</h2>
-      {hint !== undefined && <span className="text-xs text-slate-600">{hint}</span>}
+      <h2 className="text-xs font-medium uppercase tracking-wider text-muted">{children}</h2>
+      {hint !== undefined && <span className="text-xs text-subtle">{hint}</span>}
     </div>
   )
 }
@@ -121,10 +121,10 @@ function ContinentDetail({ stats }: { stats: ContinentStat[] }) {
           <li key={item.continent}>
             <div className="flex items-baseline justify-between gap-3">
               <span className="text-sm font-medium text-slate-300">{item.continent}</span>
-              <span className="text-xs tabular-nums text-slate-500">
+              <span className="text-xs tabular-nums text-muted">
                 <span className="text-slate-300">{item.visited}</span>
-                <span className="text-slate-600"> / {item.total}</span>
-                <span className="ml-2 text-slate-600">{item.percentage}%</span>
+                <span className="text-subtle"> / {item.total}</span>
+                <span className="ml-2 text-subtle">{item.percentage}%</span>
               </span>
             </div>
             <div className="mt-2">
@@ -133,7 +133,7 @@ function ContinentDetail({ stats }: { stats: ContinentStat[] }) {
                 label={`${item.continent}: ${item.visited} of ${item.total} countries, ${item.percentage}%`}
               />
             </div>
-            <p className="mt-1.5 text-xs text-slate-600">
+            <p className="mt-1.5 text-xs text-subtle">
               {item.total - item.visited === 0
                 ? 'Every country visited'
                 : `${item.total - item.visited} still to go`}
@@ -165,11 +165,11 @@ function StillToVisit({ backlog }: { backlog: ContinentBacklog[] }) {
                 <details className="card group overflow-hidden">
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-surface-raised">
                     <span className="text-sm font-medium text-slate-300">{item.continent}</span>
-                    <span className="flex items-center gap-2 text-xs tabular-nums text-slate-500">
+                    <span className="flex items-center gap-2 text-xs tabular-nums text-muted">
                       {item.missing.length} to go
                       <span
                         aria-hidden
-                        className="text-slate-600 transition-transform group-open:rotate-90"
+                        className="text-subtle transition-transform group-open:rotate-90"
                       >
                         ›
                       </span>
@@ -206,8 +206,8 @@ function TripsByYear({ years }: { years: YearCount[] }) {
       </SectionTitle>
 
       {years.length === 0 ? (
-        <p className="card mt-3 flex items-center gap-3 px-5 py-6 text-sm text-slate-500">
-          <CalendarRange size={18} strokeWidth={1.6} className="shrink-0 text-slate-600" aria-hidden />
+        <p className="card mt-3 flex items-center gap-3 px-5 py-6 text-sm text-muted">
+          <CalendarRange size={18} strokeWidth={1.6} className="shrink-0 text-subtle" aria-hidden />
           No trips recorded yet. Add one from a country to see how your years compare.
         </p>
       ) : (
@@ -223,7 +223,7 @@ function TripsByYear({ years }: { years: YearCount[] }) {
                 className="flex min-w-9 flex-1 flex-col items-center justify-end gap-2"
                 title={`${item.year}: ${item.count} ${item.count === 1 ? 'trip' : 'trips'}`}
               >
-                <span className="text-xs tabular-nums text-slate-500">
+                <span className="text-xs tabular-nums text-muted">
                   {item.count > 0 ? item.count : ''}
                 </span>
                 <div
@@ -232,7 +232,7 @@ function TripsByYear({ years }: { years: YearCount[] }) {
                   }`}
                   style={{ height: `${peak === 0 ? 0 : Math.max(4, (item.count / peak) * 100)}px` }}
                 />
-                <span className="font-mono text-[0.625rem] tabular-nums text-slate-600">
+                <span className="font-mono text-[0.625rem] tabular-nums text-subtle">
                   {String(item.year).slice(2)}
                 </span>
               </li>
@@ -254,11 +254,11 @@ function EmptyState() {
       <h2 className="mt-4 text-base font-semibold tracking-tight text-slate-100">
         Nothing to measure yet
       </h2>
-      <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-slate-500">
+      <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted">
         Mark a country as visited, or add a trip with its date, and this page will fill up:
         coverage by continent, what is left to see, and how your years compare.
       </p>
-      <p className="mt-4 text-xs text-slate-600">0 / 195 countries · 0% of the world</p>
+      <p className="mt-4 text-xs text-subtle">0 / 195 countries · 0% of the world</p>
     </section>
   )
 }

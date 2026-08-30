@@ -64,7 +64,7 @@ export default function Countries() {
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 pb-10 pt-5 sm:px-6">
       <header>
         <h1 className="text-lg font-semibold tracking-tight text-slate-100">Countries</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-muted">
           {counts.visited} of {COUNTRIES.length} tracked · tap a country to see its trips
         </p>
       </header>
@@ -74,7 +74,7 @@ export default function Countries() {
           <Search
             size={15}
             aria-hidden
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-600"
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-subtle"
           />
           <input
             type="search"
@@ -82,14 +82,14 @@ export default function Countries() {
             onChange={(event) => setFilters((current) => ({ ...current, query: event.target.value }))}
             placeholder="Search by name or code"
             aria-label="Search countries"
-            className="w-full rounded-xl border border-edge bg-surface py-2.5 pl-9 pr-9 text-sm text-slate-200 placeholder:text-slate-600 transition-colors focus:border-accent/50"
+            className="w-full rounded-xl border border-edge bg-surface py-2.5 pl-9 pr-9 text-sm text-slate-200 placeholder:text-subtle transition-colors focus:border-accent/50"
           />
           {filters.query.length > 0 && (
             <button
               type="button"
               onClick={() => setFilters((current) => ({ ...current, query: '' }))}
               aria-label="Clear search"
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-lg p-1 text-slate-600 transition-colors hover:text-slate-300"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-lg p-1 text-subtle transition-colors hover:text-slate-300"
             >
               <X size={14} aria-hidden />
             </button>
@@ -111,7 +111,7 @@ export default function Countries() {
               className={`flex-1 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors ${
                 filters.status === tab.value
                   ? 'bg-accent-dim text-accent'
-                  : 'text-slate-500 hover:text-slate-300'
+                  : 'text-muted hover:text-slate-300'
               }`}
             >
               {tab.label}
@@ -143,7 +143,7 @@ export default function Countries() {
       </div>
 
       {results.length === 0 ? (
-        <p className="card px-6 py-10 text-center text-sm leading-relaxed text-slate-500">
+        <p className="card px-6 py-10 text-center text-sm leading-relaxed text-muted">
           No countries match these filters.
           <br />
           Try a different search or clear the continent.
@@ -184,7 +184,7 @@ function ContinentChip({
       className={`rounded-full border px-2.5 py-1 text-xs transition-colors ${
         active
           ? 'border-accent/40 bg-accent-dim text-accent'
-          : 'border-edge text-slate-500 hover:border-edge-strong hover:text-slate-300'
+          : 'border-edge text-muted hover:border-edge-strong hover:text-slate-300'
       }`}
     >
       {label}

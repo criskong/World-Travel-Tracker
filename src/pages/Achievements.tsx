@@ -26,9 +26,9 @@ export default function Achievements() {
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 pb-10 pt-5 sm:px-6">
       <header>
         <h1 className="text-lg font-semibold tracking-tight text-slate-100">Achievements</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-muted">
           {summary.unlockedCount} of {summary.total} unlocked
-          <span className="text-slate-600"> · based on the 195 UN states</span>
+          <span className="text-subtle"> · based on the 195 UN states</span>
         </p>
       </header>
 
@@ -57,7 +57,7 @@ function NextUp({ achievement }: { achievement: Achievement }) {
 
   return (
     <section aria-label="Next achievement" className="card animate-fade-up p-5">
-      <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-slate-500">
+      <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted">
         <Trophy size={14} className="text-accent" aria-hidden />
         Next up
       </div>
@@ -65,7 +65,7 @@ function NextUp({ achievement }: { achievement: Achievement }) {
       <h2 className="mt-3 text-base font-semibold tracking-tight text-slate-100">
         {achievement.name}
       </h2>
-      <p className="mt-1 text-sm text-slate-500">{achievement.description}</p>
+      <p className="mt-1 text-sm text-muted">{achievement.description}</p>
 
       <div className="mt-4">
         <ProgressBar
@@ -76,7 +76,7 @@ function NextUp({ achievement }: { achievement: Achievement }) {
       </div>
 
       <div className="mt-2 flex items-baseline justify-between gap-3 text-xs">
-        <span className="text-slate-500">{achievement.detail}</span>
+        <span className="text-muted">{achievement.detail}</span>
         <span className="tabular-nums text-slate-400">
           {remaining} to go · {Math.round(achievement.progress * 100)}%
         </span>
@@ -97,8 +97,8 @@ function Group({
   return (
     <section aria-label={title} className="animate-fade-up">
       <div className="flex items-baseline justify-between gap-3">
-        <h2 className="text-xs font-medium uppercase tracking-wider text-slate-500">{title}</h2>
-        <span className="text-xs tabular-nums text-slate-600">{count}</span>
+        <h2 className="text-xs font-medium uppercase tracking-wider text-muted">{title}</h2>
+        <span className="text-xs tabular-nums text-subtle">{count}</span>
       </div>
 
       <ul className="mt-3 grid gap-2.5 sm:grid-cols-2">
