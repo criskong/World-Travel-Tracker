@@ -97,7 +97,12 @@ describe('markVisited / unmarkVisited', () => {
   it('rifiuta un codice non presente nella fonte di verità', async () => {
     await useTravelStore.getState().markVisited('ZZ')
     expect(useTravelStore.getState().manuallyMarked).toEqual([])
-    expect(useTravelStore.getState().lastError).toContain('ZZ')
+    // Il messaggio e una chiave con i suoi parametri: lo store non parla
+    // nessuna lingua, la traduzione avviene al momento di disegnare.
+    expect(useTravelStore.getState().lastError).toEqual({
+      key: 'storage.unknownCountry',
+      vars: { code: 'ZZ' },
+    })
   })
 
   it('toglie il marcatore', async () => {
@@ -146,7 +151,7 @@ describe('addVisit / removeVisit', () => {
     const visit = await useTravelStore.getState().addVisit({ countryCode: 'JP', date: '2024-02-31' })
     expect(visit).toBeNull()
     expect(useTravelStore.getState().visits).toEqual([])
-    expect(useTravelStore.getState().lastError).toContain('Invalid trip date')
+    expect(useTravelStore.getState().lastError?.key).toBe('storage.invalidDate')
   })
 
   it('rifiuta un Paese sconosciuto', async () => {

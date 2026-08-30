@@ -1,5 +1,6 @@
 import { isKnownCountryCode } from '../data/countries/countries'
 import { TRAVEL_DATA_FORMAT_VERSION } from '../types'
+import type { LocalizedMessage } from '../i18n/message'
 import type { TravelData, Visit } from '../types'
 
 /**
@@ -16,12 +17,12 @@ import type { TravelData, Visit } from '../types'
 export interface TravelDataValidationSuccess {
   ok: true
   data: TravelData
-  warnings: string[]
+  warnings: LocalizedMessage[]
 }
 
 export interface TravelDataValidationFailure {
   ok: false
-  errors: string[]
+  errors: LocalizedMessage[]
 }
 
 export type TravelDataValidationResult =
@@ -57,25 +58,23 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 
 /** Valida e normalizza un payload di import. Non tocca mai il database. */
 export function parseTravelData(input: unknown): TravelDataValidationResult {
-  const errors: string[] = []
-  const warnings: string[] = []
+  const errors: LocalizedMessage[] = []
+  const warnings: LocalizedMessage[] = []
 
   if (!isPlainObject(input)) {
-    return { ok: false, errors: ['This file does not contain a valid JSON object.'] }
+    return { ok: false, errors: [{ key: 'validation.notObject' }] }
   }
 
   const formatVersion = input.formatVersion
   if (typeof formatVersion === 'number' && formatVersion > TRAVEL_DATA_FORMAT_VERSION) {
-    errors.push(
-      `This file was created by a newer version of the app (format ${formatVersion}).`,
-    )
+    errors.push({ key: 'validation.futureFormat', vars: { version: formatVersion } })
   }
 
   if (!Array.isArray(input.manuallyMarked)) {
-    errors.push('Missing "manuallyMarked" field, or it is not a list.')
+    errors.push({ key: 'validation.missingMarked' })
   }
   if (!Array.isArray(input.visits)) {
-    errors.push('Missing "visits" field, or it is not a list.')
+    errors.push({ key: 'validation.missingVisits' })
   }
   if (errors.length > 0) {
     return { ok: false, errors }
@@ -93,9 +92,10 @@ export function parseTravelData(input: unknown): TravelDataValidationResult {
     marked.add(code)
   }
   if (discardedMarked > 0) {
-    warnings.push(
-      `${discardedMarked} ${discardedMarked === 1 ? 'country was' : 'countries were'} skipped: unknown ISO code.`,
-    )
+    warnings.push({
+      key: 'validation.skippedCountries#',
+      vars: { count: discardedMarked },
+    })
   }
 
   const rawVisits = input.visits as unknown[]
@@ -127,9 +127,7 @@ export function parseTravelData(input: unknown): TravelDataValidationResult {
   }
 
   if (discardedVisits > 0) {
-    warnings.push(
-      `${discardedVisits} ${discardedVisits === 1 ? 'trip was' : 'trips were'} skipped: incomplete or invalid data.`,
-    )
+    warnings.push({ key: 'validation.skippedTrips#', vars: { count: discardedVisits } })
   }
 
   return {
@@ -154,10 +152,7 @@ export function parseTravelDataJson(text: string): TravelDataValidationResult {
   try {
     raw = JSON.parse(text)
   } catch {
-    return {
-      ok: false,
-      errors: ['This file is not valid JSON. Pick a backup exported from this app.'],
-    }
+    return { ok: false, errors: [{ key: 'validation.notJson' }] }
   }
   return parseTravelData(raw)
 }

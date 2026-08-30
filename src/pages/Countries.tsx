@@ -9,11 +9,13 @@ import { countByStatus, filterCountries } from '../utils/countryFilters'
 import type { CountryFilters, VisitStatusFilter } from '../utils/countryFilters'
 import { CONTINENTS } from '../types'
 import type { Continent } from '../types'
+import { useTranslation } from '../i18n/useTranslation'
+import type { TranslationKey } from '../i18n/translate'
 
-const STATUS_TABS: Array<{ value: VisitStatusFilter; label: string }> = [
-  { value: 'all', label: 'All' },
-  { value: 'visited', label: 'Visited' },
-  { value: 'not-visited', label: 'Not visited' },
+const STATUS_TABS: Array<{ value: VisitStatusFilter; label: TranslationKey }> = [
+  { value: 'all', label: 'countries.tab.all' },
+  { value: 'visited', label: 'countries.tab.visited' },
+  { value: 'not-visited', label: 'countries.tab.notVisited' },
 ]
 
 /**
@@ -26,6 +28,7 @@ const STATUS_TABS: Array<{ value: VisitStatusFilter; label: string }> = [
  * migliaia, questo è il punto da rivedere.
  */
 export default function Countries() {
+  const { t, continent: continentLabel, country: countryLabel, compare } = useTranslation()
   const [filters, setFilters] = useState<CountryFilters>({
     query: '',
     status: 'all',
@@ -45,13 +48,19 @@ export default function Countries() {
     return counts
   }, [visits])
 
+  // Ricerca e ordinamento seguono la lingua: in italiano "Germania" non sta
+  // dove sta "Germany".
+  const naming = useCallback(
+    (country: { code: string }) => countryLabel(country.code),
+    [countryLabel],
+  )
   const results = useMemo(
-    () => filterCountries(COUNTRIES, filters, visited),
-    [filters, visited],
+    () => filterCountries(COUNTRIES, filters, visited, naming, compare),
+    [compare, filters, naming, visited],
   )
   const counts = useMemo(
-    () => countByStatus(COUNTRIES, filters, visited),
-    [filters, visited],
+    () => countByStatus(COUNTRIES, filters, visited, naming),
+    [filters, naming, visited],
   )
 
   const handleSelect = useCallback((code: string) => setSelectedCode(code), [])
@@ -63,9 +72,11 @@ export default function Countries() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 pb-10 pt-5 sm:px-6">
       <header>
-        <h1 className="text-lg font-semibold tracking-tight text-slate-100">Countries</h1>
+        <h1 className="text-lg font-semibold tracking-tight text-slate-100">
+          {t('countries.title')}
+        </h1>
         <p className="mt-1 text-sm text-muted">
-          {counts.visited} of {COUNTRIES.length} tracked · tap a country to see its trips
+          {t('countries.subtitle', { visited: counts.visited, total: COUNTRIES.length })}
         </p>
       </header>
 
@@ -80,15 +91,15 @@ export default function Countries() {
             type="search"
             value={filters.query}
             onChange={(event) => setFilters((current) => ({ ...current, query: event.target.value }))}
-            placeholder="Search by name or code"
-            aria-label="Search countries"
+            placeholder={t('countries.searchPlaceholder')}
+            aria-label={t('countries.search')}
             className="w-full rounded-xl border border-edge bg-surface py-2.5 pl-9 pr-9 text-sm text-slate-200 placeholder:text-subtle transition-colors focus:border-accent/50"
           />
           {filters.query.length > 0 && (
             <button
               type="button"
               onClick={() => setFilters((current) => ({ ...current, query: '' }))}
-              aria-label="Clear search"
+              aria-label={t('countries.clearSearch')}
               className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-lg p-1 text-subtle transition-colors hover:text-slate-300"
             >
               <X size={14} aria-hidden />
@@ -98,7 +109,7 @@ export default function Countries() {
 
         <div
           role="tablist"
-          aria-label="Filter by visit status"
+          aria-label={t('countries.filterByStatus')}
           className="flex gap-1 rounded-xl border border-edge bg-surface p-1"
         >
           {STATUS_TABS.map((tab) => (
@@ -114,22 +125,26 @@ export default function Countries() {
                   : 'text-muted hover:text-slate-300'
               }`}
             >
-              {tab.label}
+              {t(tab.label)}
               <span className="ml-1.5 tabular-nums opacity-60">{countFor(tab.value)}</span>
             </button>
           ))}
         </div>
 
-        <div role="group" aria-label="Filter by continent" className="flex flex-wrap gap-1.5">
+        <div
+          role="group"
+          aria-label={t('countries.filterByContinent')}
+          className="flex flex-wrap gap-1.5"
+        >
           <ContinentChip
-            label="All continents"
+            label={t('countries.allContinents')}
             active={filters.continent === null}
             onClick={() => setFilters((current) => ({ ...current, continent: null }))}
           />
           {CONTINENTS.map((continent) => (
             <ContinentChip
               key={continent}
-              label={continent}
+              label={continentLabel(continent)}
               active={filters.continent === continent}
               onClick={() =>
                 setFilters((current) => ({
@@ -144,9 +159,9 @@ export default function Countries() {
 
       {results.length === 0 ? (
         <p className="card px-6 py-10 text-center text-sm leading-relaxed text-muted">
-          No countries match these filters.
+          {t('countries.empty')}
           <br />
-          Try a different search or clear the continent.
+          {t('countries.emptyHint')}
         </p>
       ) : (
         <ul className="flex flex-col gap-1.5">

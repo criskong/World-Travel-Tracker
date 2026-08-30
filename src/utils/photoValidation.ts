@@ -1,3 +1,5 @@
+import type { LocalizedMessage } from '../i18n/message'
+
 /**
  * Validazione delle foto prima di scriverle su IndexedDB.
  *
@@ -11,7 +13,7 @@ export const MAX_PHOTO_BYTES = 5 * 1024 * 1024
 
 export const ACCEPTED_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif']
 
-export type PhotoValidation = { ok: true } | { ok: false; error: string }
+export type PhotoValidation = { ok: true } | { ok: false; error: LocalizedMessage }
 
 export function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
@@ -21,19 +23,22 @@ export function formatBytes(bytes: number): string {
 
 export function validatePhoto(file: { type: string; size: number }): PhotoValidation {
   if (!file.type.startsWith('image/')) {
-    return { ok: false, error: 'That file is not an image. Pick a JPEG, PNG, WebP or GIF.' }
+    return { ok: false, error: { key: 'photo.notImage' } }
   }
   if (!ACCEPTED_PHOTO_TYPES.includes(file.type)) {
-    return { ok: false, error: `${file.type} is not supported. Use JPEG, PNG, WebP or GIF.` }
+    return { ok: false, error: { key: 'photo.unsupported', vars: { type: file.type } } }
   }
   if (file.size > MAX_PHOTO_BYTES) {
     return {
       ok: false,
-      error: `This photo is ${formatBytes(file.size)}. The limit is ${formatBytes(MAX_PHOTO_BYTES)} — pick a smaller one.`,
+      error: {
+        key: 'photo.tooLarge',
+        vars: { size: formatBytes(file.size), limit: formatBytes(MAX_PHOTO_BYTES) },
+      },
     }
   }
   if (file.size === 0) {
-    return { ok: false, error: 'That file is empty.' }
+    return { ok: false, error: { key: 'photo.empty' } }
   }
   return { ok: true }
 }

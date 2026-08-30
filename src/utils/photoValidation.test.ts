@@ -10,7 +10,7 @@ describe('validatePhoto', () => {
     const result = validatePhoto({ type: 'application/pdf', size: 1000 })
     expect(result.ok).toBe(false)
     if (result.ok) return
-    expect(result.error).toContain('not an image')
+    expect(result.error.key).toBe('photo.notImage')
   })
 
   it('rifiuta i formati immagine non supportati', () => {
@@ -21,9 +21,11 @@ describe('validatePhoto', () => {
     const result = validatePhoto({ type: 'image/jpeg', size: MAX_PHOTO_BYTES + 1 })
     expect(result.ok).toBe(false)
     if (result.ok) return
-    // L'utente deve capire il problema senza aprire la console.
-    expect(result.error).toContain('5.0 MB')
-    expect(result.error).toContain('limit')
+    // L'utente deve capire il problema senza aprire la console: il messaggio
+    // porta con se la dimensione vera e il limite, e la frase la compone la
+    // traduzione.
+    expect(result.error.key).toBe('photo.tooLarge')
+    expect(result.error.vars).toEqual({ size: '5.0 MB', limit: '5.0 MB' })
   })
 
   it('accetta esattamente il limite', () => {

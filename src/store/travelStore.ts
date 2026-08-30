@@ -2,6 +2,8 @@ import { create } from 'zustand'
 import { isKnownCountryCode } from '../data/countries/countries'
 import {
   StorageUnavailableError,
+  readStoredLanguage,
+  writeStoredLanguage,
   addManuallyMarked,
   clearManuallyMarked,
   clearPhotos,
@@ -19,6 +21,9 @@ import {
   saveVisit,
 } from '../services/storage'
 import { newId } from '../utils/id'
+import { detectLanguage, isLanguage } from '../i18n/languages'
+import type { Language } from '../i18n/languages'
+import type { LocalizedMessage } from '../i18n/message'
 import { isValidVisitDate, parseTravelData } from '../utils/travelDataSchema'
 import { TRAVEL_DATA_FORMAT_VERSION } from '../types'
 import type { TravelData, TravelDataExport, Visit } from '../types'
@@ -31,9 +36,12 @@ export type NewVisit = Omit<Visit, 'id'> & { id?: string }
 
 export interface ImportOutcome {
   ok: boolean
-  errors: string[]
-  warnings: string[]
+  errors: StoreMessage[]
+  warnings: StoreMessage[]
 }
+
+/** Alias storico: i messaggi dello store sono . */
+export type StoreMessage = LocalizedMessage
 
 export interface TravelStore extends TravelData {
   /** Flag di loading dell'idratazione iniziale. */
@@ -41,9 +49,11 @@ export interface TravelStore extends TravelData {
   /** Stato dell'archiviazione locale. `unavailable` = modalità solo memoria. */
   storage: StorageStatus
   /** Messaggio comprensibile per l'utente. Mai uno stack trace. */
-  storageMessage: string | null
+  storageMessage: StoreMessage | null
   /** Ultimo errore di un'operazione puntuale. */
-  lastError: string | null
+  lastError: StoreMessage | null
+  /** Lingua dell'interfaccia. Preferenza, non dato di viaggio. */
+  language: Language
 
   hydrate: () => Promise<void>
   markVisited: (code: string) => Promise<void>
@@ -56,14 +66,13 @@ export interface TravelStore extends TravelData {
   importData: (raw: unknown) => Promise<ImportOutcome>
   exportData: () => TravelDataExport
   resetData: () => Promise<void>
+  setLanguage: (language: Language) => Promise<void>
   clearLastError: () => void
 }
 
-const STORAGE_UNAVAILABLE_MESSAGE =
-  'Local storage is unavailable — this happens in private browsing. ' +
-  'You can still browse and edit, but changes will be lost when you close this tab.'
+const STORAGE_UNAVAILABLE_MESSAGE: StoreMessage = { key: 'storage.unavailable' }
 
-const GENERIC_WRITE_ERROR = 'Could not save your change. Please try again.'
+const GENERIC_WRITE_ERROR: StoreMessage = { key: 'storage.writeFailed' }
 
 type PersistOutcome = 'saved' | 'not-persisted' | 'failed'
 
@@ -105,19 +114,27 @@ export const useTravelStore = create<TravelStore>((set, get) => {
     storage: 'unknown',
     storageMessage: null,
     lastError: null,
+    // Prima di leggere le preferenze si parte dalla lingua del sistema: senza,
+    // un utente italiano vedrebbe un lampo di inglese a ogni avvio.
+    language: detectLanguage(),
 
     hydrate: async () => {
       if (get().status !== 'idle') return
       set({ status: 'hydrating' })
 
       try {
-        const [manuallyMarked, visits] = await Promise.all([loadManuallyMarked(), loadVisits()])
+        const [manuallyMarked, visits, storedLanguage] = await Promise.all([
+          loadManuallyMarked(),
+          loadVisits(),
+          readStoredLanguage(),
+        ])
         set({
           manuallyMarked,
           visits,
           status: 'ready',
           storage: 'available',
           storageMessage: null,
+          ...(isLanguage(storedLanguage) ? { language: storedLanguage } : {}),
         })
         // Senza questo iOS Safari può evictare IndexedDB dopo ~7 giorni.
         void requestPersistentStorage()
@@ -128,9 +145,7 @@ export const useTravelStore = create<TravelStore>((set, get) => {
           visits: [],
           status: 'ready',
           storage: 'unavailable',
-          storageMessage: unavailable
-            ? STORAGE_UNAVAILABLE_MESSAGE
-            : 'Could not read your saved data. The app starts empty for this session.',
+          storageMessage: unavailable ? STORAGE_UNAVAILABLE_MESSAGE : { key: 'storage.readFailed' },
         })
       }
     },
@@ -138,7 +153,7 @@ export const useTravelStore = create<TravelStore>((set, get) => {
     markVisited: async (code) => {
       const normalized = normalizeCode(code)
       if (!isKnownCountryCode(normalized)) {
-        set({ lastError: `Unknown country code: ${normalized}.` })
+        set({ lastError: { key: 'storage.unknownCountry', vars: { code: normalized } } })
         return
       }
       if (get().manuallyMarked.includes(normalized)) return
@@ -229,11 +244,11 @@ export const useTravelStore = create<TravelStore>((set, get) => {
     addVisit: async (input, photo) => {
       const countryCode = normalizeCode(input.countryCode)
       if (!isKnownCountryCode(countryCode)) {
-        set({ lastError: `Unknown country code: ${countryCode}.` })
+        set({ lastError: { key: 'storage.unknownCountry', vars: { code: countryCode } } })
         return null
       }
       if (!isValidVisitDate(input.date)) {
-        set({ lastError: 'Invalid trip date: use the YYYY-MM-DD format.' })
+        set({ lastError: { key: 'storage.invalidDate' } })
         return null
       }
 
@@ -249,7 +264,7 @@ export const useTravelStore = create<TravelStore>((set, get) => {
             set({ storage: 'unavailable', storageMessage: STORAGE_UNAVAILABLE_MESSAGE })
             photoId = undefined
           } else {
-            set({ lastError: 'Could not save the photo. The trip was not added.' })
+            set({ lastError: { key: 'storage.photoFailed' } })
             return null
           }
         }
@@ -289,7 +304,7 @@ export const useTravelStore = create<TravelStore>((set, get) => {
     importData: async (raw) => {
       const parsed = parseTravelData(raw)
       if (!parsed.ok) {
-        set({ lastError: parsed.errors[0] ?? 'Invalid file.' })
+        set({ lastError: parsed.errors[0] ?? { key: 'storage.invalidFile' } })
         return { ok: false, errors: parsed.errors, warnings: [] }
       }
 
@@ -310,7 +325,7 @@ export const useTravelStore = create<TravelStore>((set, get) => {
         set({ manuallyMarked: previous.manuallyMarked, visits: previous.visits })
         return {
           ok: false,
-          errors: ['Import failed: your previous data was kept.'],
+          errors: [{ key: 'storage.importFailed' }],
           warnings: parsed.warnings,
         }
       }
@@ -340,6 +355,16 @@ export const useTravelStore = create<TravelStore>((set, get) => {
       if (outcome === 'failed') {
         set({ manuallyMarked: previous.manuallyMarked, visits: previous.visits })
       }
+    },
+
+    /**
+     * Cambia lingua e la ricorda. Non e un dato di viaggio: sta in una
+     * tabella a parte, non entra nel backup e `resetData` non la tocca.
+     */
+    setLanguage: async (language) => {
+      if (get().language === language) return
+      set({ language })
+      await writeStoredLanguage(language)
     },
 
     clearLastError: () => set({ lastError: null }),

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { CalendarDays, ImageOff, MapPin, Trash2 } from 'lucide-react'
 import { usePhoto } from '../../hooks/usePhoto'
-import { formatVisitDate } from '../../utils/formatDate'
+import { useTranslation } from '../../i18n/useTranslation'
 import type { Visit } from '../../types'
 
 interface VisitCardProps {
@@ -11,6 +11,7 @@ interface VisitCardProps {
 
 /** Una riga della lista dei viaggi, con foto se presente. */
 export function VisitCard({ visit, onRemove }: VisitCardProps) {
+  const { t, date } = useTranslation()
   const { url, status } = usePhoto(visit.photoId)
   const [confirming, setConfirming] = useState(false)
 
@@ -20,7 +21,7 @@ export function VisitCard({ visit, onRemove }: VisitCardProps) {
         <div className="min-w-0 flex-1">
           <p className="flex items-center gap-1.5 text-sm font-medium text-slate-200">
             <CalendarDays size={13} className="shrink-0 text-muted" aria-hidden />
-            {formatVisitDate(visit.date)}
+            {date(visit.date)}
           </p>
           {visit.city && (
             <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-400">
@@ -38,21 +39,21 @@ export function VisitCard({ visit, onRemove }: VisitCardProps) {
                 onClick={() => setConfirming(false)}
                 className="rounded-lg px-2 py-1 text-xs text-slate-400 transition-colors hover:text-slate-200"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 type="button"
                 onClick={() => onRemove(visit.id)}
                 className="rounded-lg bg-red-500/15 px-2 py-1 text-xs font-medium text-red-300 transition-colors hover:bg-red-500/25"
               >
-                Delete
+                {t('common.delete')}
               </button>
             </span>
           ) : (
             <button
               type="button"
               onClick={() => setConfirming(true)}
-              aria-label="Delete this trip"
+              aria-label={t('visit.remove')}
               className="shrink-0 rounded-lg p-1.5 text-subtle transition-colors hover:bg-surface-raised hover:text-red-300"
             >
               <Trash2 size={14} aria-hidden />
@@ -75,10 +76,10 @@ export function VisitCard({ visit, onRemove }: VisitCardProps) {
               {status === 'missing' ? (
                 <>
                   <ImageOff size={14} aria-hidden />
-                  Photo not found
+                  {t('visit.photoNotFound')}
                 </>
               ) : (
-                'Loading photo…'
+                t('visit.photoLoading')
               )}
             </div>
           )}

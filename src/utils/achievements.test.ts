@@ -135,7 +135,7 @@ describe('Continent Master', () => {
     const data: TravelData = { manuallyMarked: oceania.map((c) => c.code), visits: [] }
     const achievement = byId(data, 'continent-master')
     expect(achievement.unlocked).toBe(true)
-    expect(achievement.detail).toContain('Oceania')
+    expect(achievement.detail).toEqual({ kind: 'continent-done', continents: ['Oceania'] })
   })
 
   it('resta bloccato se manca anche un solo Paese', () => {
@@ -145,7 +145,12 @@ describe('Continent Master', () => {
     }
     const achievement = byId(data, 'continent-master')
     expect(achievement.unlocked).toBe(false)
-    expect(achievement.detail).toContain('Oceania')
+    expect(achievement.detail).toEqual({
+      kind: 'continent-progress',
+      continent: 'Oceania',
+      current: oceania.length - 1,
+      total: oceania.length,
+    })
     expect(achievement.current).toBe(oceania.length - 1)
     expect(achievement.target).toBe(oceania.length)
   })
@@ -170,7 +175,9 @@ describe('Continent Master', () => {
       ],
       visits: [],
     }
-    expect(byId(data, 'continent-master').detail).toContain('Oceania')
+    const detail = byId(data, 'continent-master').detail
+    expect(detail.kind).toBe('continent-progress')
+    if (detail.kind === 'continent-progress') expect(detail.continent).toBe('Oceania')
   })
 
   it('l Antartide non conta come continente completato', () => {

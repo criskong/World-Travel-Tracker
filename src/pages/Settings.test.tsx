@@ -315,6 +315,6 @@ describe('Reset', () => {
     fireEvent.click(screen.getByRole('button', { name: /Reset all data/i }))
 
     const dialog = await screen.findByRole('dialog')
-    expect(within(dialog).getByText(/1 marked country, 2 trips/i)).toBeDefined()
+    expect(within(dialog).getByText(/1 country marked, 2 trips/i)).toBeDefined()
   })
 })

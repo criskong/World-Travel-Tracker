@@ -4,6 +4,7 @@ import { getCountry, isUnMember } from '../../data/countries/countries'
 import { hasVisits, isVisited, visitsForCountry } from '../../store/selectors'
 import { useTravelStore } from '../../store/travelStore'
 import { flagEmoji } from '../../utils/flag'
+import { useTranslation } from '../../i18n/useTranslation'
 import { AddVisitForm } from './AddVisitForm'
 import { RemoveVisitedDialog } from './RemoveVisitedDialog'
 import { VisitCard } from './VisitCard'
@@ -22,6 +23,7 @@ interface CountryDetailsProps {
  * modal di conferma che li elenca.
  */
 export function CountryDetails({ code, onClose }: CountryDetailsProps) {
+  const { t, country: countryLabel, continent } = useTranslation()
   const country = getCountry(code)
 
   const manuallyMarked = useTravelStore((state) => state.manuallyMarked)
@@ -93,18 +95,18 @@ export function CountryDetails({ code, onClose }: CountryDetailsProps) {
 
           <div className="min-w-0 flex-1">
             <h2 className="truncate text-base font-semibold tracking-tight text-slate-100">
-              {country.name}
+              {countryLabel(country.code)}
             </h2>
             <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted">
-              <span>{country.continent}</span>
+              <span>{continent(country.continent)}</span>
               <span aria-hidden>·</span>
               <span className="font-mono tracking-wider">{country.code}</span>
               {!isUnMember(country.code) && (
                 <span
-                  title="Not a UN member state — not counted in the 195"
+                  title={t('common.territoryHint')}
                   className="rounded-full border border-edge px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted"
                 >
-                  Territory
+                  {t('common.territory')}
                 </span>
               )}
             </p>
@@ -114,7 +116,7 @@ export function CountryDetails({ code, onClose }: CountryDetailsProps) {
             ref={closeRef}
             type="button"
             onClick={onClose}
-            aria-label="Close details"
+            aria-label={t('details.close')}
             className="-mr-1 -mt-1 shrink-0 rounded-lg p-1.5 text-muted transition-colors hover:bg-surface-raised hover:text-slate-300"
           >
             <X size={16} aria-hidden />
@@ -131,7 +133,7 @@ export function CountryDetails({ code, onClose }: CountryDetailsProps) {
               }
             >
               {visited && <Check size={12} aria-hidden />}
-              {visited ? 'Visited' : 'Not visited'}
+              {visited ? t('common.visited') : t('common.notVisited')}
             </span>
           </div>
 
@@ -145,12 +147,12 @@ export function CountryDetails({ code, onClose }: CountryDetailsProps) {
             }
           >
             {visited ? <X size={15} aria-hidden /> : <Check size={15} aria-hidden />}
-            {visited ? 'Mark as not visited' : 'Mark as visited'}
+            {visited ? t('details.markNotVisited') : t('details.markVisited')}
           </button>
 
           <div className="mt-6 flex items-baseline justify-between gap-3">
             <h3 className="text-xs font-medium uppercase tracking-wider text-muted">
-              Trips {countryVisits.length > 0 && `(${countryVisits.length})`}
+              {t('details.trips')} {countryVisits.length > 0 && `(${countryVisits.length})`}
             </h3>
             {!addingVisit && (
               <button
@@ -159,7 +161,7 @@ export function CountryDetails({ code, onClose }: CountryDetailsProps) {
                 className="flex items-center gap-1 text-xs font-medium text-accent transition-opacity hover:opacity-80"
               >
                 <Plus size={13} aria-hidden />
-                Add visit
+                {t('details.addVisit')}
               </button>
             )}
           </div>
@@ -177,9 +179,9 @@ export function CountryDetails({ code, onClose }: CountryDetailsProps) {
           {countryVisits.length === 0 ? (
             !addingVisit && (
               <p className="mt-3 rounded-xl border border-dashed border-edge px-3 py-4 text-center text-xs leading-relaxed text-muted">
-                No trips recorded yet.
+                {t('details.noTrips')}
                 <br />
-                Add one to remember when you were here.
+                {t('details.noTripsHint')}
               </p>
             )
           ) : (

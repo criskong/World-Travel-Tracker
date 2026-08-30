@@ -10,6 +10,7 @@ import { useProgressiveReveal } from '../../hooks/useProgressiveReveal'
 import { useVisitedCodes } from '../../hooks/useVisitedCodes'
 import { useVisitedTransitions } from '../../hooks/useVisitedTransitions'
 import { useTravelStore } from '../../store/travelStore'
+import { useTranslation } from '../../i18n/useTranslation'
 import {
   COLOR_BACKGROUND,
   COLOR_GLOBE,
@@ -28,7 +29,7 @@ const globeMaterial = new MeshPhongMaterial({
 type GeoState =
   | { status: 'loading' }
   | { status: 'ready'; polygons: CountryPolygon[] }
-  | { status: 'error'; message: string }
+  | { status: 'error'; messageKey: 'home.globe.mapFailed' }
 
 export interface GlobeViewProps {
   /**
@@ -56,6 +57,7 @@ let mountCount = 0
  * sottoscrizione interna: si aggiornano senza toccare la scena.
  */
 function GlobeViewComponent({ onSelectCountry, selectedIso }: GlobeViewProps) {
+  const { t } = useTranslation()
   const containerRef = useRef<HTMLDivElement>(null)
   const globeRef = useRef<GlobeMethods | undefined>(undefined)
   const { width, height } = useElementSize(containerRef)
@@ -126,7 +128,7 @@ function GlobeViewComponent({ onSelectCountry, selectedIso }: GlobeViewProps) {
         if (cancelled) return
         setGeo({
           status: 'error',
-          message: 'Could not load the country map. Reload the page to try again.',
+          messageKey: 'home.globe.mapFailed' as const,
         })
       })
 
@@ -269,7 +271,7 @@ function GlobeViewComponent({ onSelectCountry, selectedIso }: GlobeViewProps) {
             aria-live="polite"
             className="rounded-full border border-red-500/40 bg-red-950/70 px-4 py-2 text-sm text-red-200"
           >
-            {geo.message}
+            {t('home.globe.mapFailed')}
           </p>
         </div>
       )}

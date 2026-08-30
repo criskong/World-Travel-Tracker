@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { Compass, Globe, MapPin } from 'lucide-react'
 import { useTravelStore } from '../../store/travelStore'
 import { computeStats } from '../../utils/stats'
+import { useTranslation } from '../../i18n/useTranslation'
 import type { ContinentStat } from '../../utils/stats'
 
 /**
@@ -12,6 +13,7 @@ import type { ContinentStat } from '../../utils/stats'
  * Tutti i totali arrivano da `countries.ts` via `computeStats`.
  */
 export function StatsSection() {
+  const { t } = useTranslation()
   const manuallyMarked = useTravelStore((state) => state.manuallyMarked)
   const visits = useTravelStore((state) => state.visits)
 
@@ -25,30 +27,30 @@ export function StatsSection() {
   }
 
   return (
-    <section aria-label="Statistics" className="animate-fade-up">
+    <section aria-label={t('stats.section')} className="animate-fade-up">
       <div className="grid gap-3 sm:grid-cols-3">
         <StatTile
           icon={<MapPin size={16} aria-hidden />}
-          label="Countries visited"
+          label={t('stats.countriesVisited')}
           value={`${stats.visitedCount}`}
           suffix={`/ ${stats.totalCount}`}
         />
         <StatTile
           icon={<Globe size={16} aria-hidden />}
-          label="Of the world"
+          label={t('stats.ofTheWorld')}
           value={`${stats.worldPercentage}`}
           suffix="%"
         />
         <StatTile
           icon={<Compass size={16} aria-hidden />}
-          label="Territories"
+          label={t('stats.territories')}
           value={`${stats.territoriesVisited}`}
-          suffix="beyond the 195"
+          suffix={t('stats.beyondThe195')}
         />
       </div>
 
       <h2 className="mt-6 text-xs font-medium uppercase tracking-wider text-muted">
-        By continent
+        {t('stats.byContinent')}
       </h2>
       <ul className="mt-3 flex flex-col gap-2.5">
         {stats.byContinent.map((item) => (
@@ -86,15 +88,22 @@ function StatTile({ icon, label, value, suffix }: StatTileProps) {
 }
 
 function ContinentRow({ stat }: { stat: ContinentStat }) {
+  const { t, continent } = useTranslation()
+
   return (
     <div className="flex items-center gap-3">
       <span className="w-28 shrink-0 truncate text-sm text-slate-400 sm:w-32">
-        {stat.continent}
+        {continent(stat.continent)}
       </span>
       <div
         className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/5"
         role="img"
-        aria-label={`${stat.continent}: ${stat.visited} of ${stat.total}, ${stat.percentage}%`}
+        aria-label={t('stats.continentBar', {
+          continent: continent(stat.continent),
+          visited: stat.visited,
+          total: stat.total,
+          percentage: stat.percentage,
+        })}
       >
         <div
           className="h-full rounded-full bg-accent transition-[width] duration-500 ease-out"
@@ -110,19 +119,20 @@ function ContinentRow({ stat }: { stat: ContinentStat }) {
 
 /** Primo avvio: nessun Paese visitato. Un invito, non un vuoto. */
 function EmptyState() {
+  const { t } = useTranslation()
+
   return (
     <section className="card animate-fade-up px-6 py-10 text-center">
       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-accent-dim">
         <Compass size={22} strokeWidth={1.6} className="text-accent" aria-hidden />
       </div>
       <h2 className="mt-4 text-base font-semibold tracking-tight text-slate-100">
-        Your world is still waiting
+        {t('stats.empty.title')}
       </h2>
       <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted">
-        Spin the globe and tap a country to open its details. Mark it as visited from
-        there, and your numbers will show up here.
+        {t('stats.empty.body')}
       </p>
-      <p className="mt-4 text-xs text-subtle">0 / 195 countries · 0% of the world</p>
+      <p className="mt-4 text-xs text-subtle">{t('stats.empty.footer')}</p>
     </section>
   )
 }

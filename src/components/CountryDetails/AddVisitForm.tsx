@@ -5,6 +5,8 @@ import { useTravelStore } from '../../store/travelStore'
 import { useObjectUrl } from '../../hooks/useObjectUrl'
 import { flagEmoji } from '../../utils/flag'
 import { MAX_PHOTO_BYTES, formatBytes, validatePhoto } from '../../utils/photoValidation'
+import { useTranslation } from '../../i18n/useTranslation'
+import type { LocalizedMessage } from '../../i18n/message'
 
 interface AddVisitFormProps {
   /** Paese preselezionato. Resta modificabile: il campo fa parte del form. */
@@ -34,6 +36,7 @@ const LABEL_CLASS = 'text-xs font-medium text-muted'
  * La foto viene validata PRIMA di arrivare a IndexedDB.
  */
 export function AddVisitForm({ countryCode, onDone, onCancel }: AddVisitFormProps) {
+  const { t, country: countryLabel, compare } = useTranslation()
   const addVisit = useTravelStore((state) => state.addVisit)
 
   const [code, setCode] = useState(countryCode)
@@ -41,7 +44,7 @@ export function AddVisitForm({ countryCode, onDone, onCancel }: AddVisitFormProp
   const [city, setCity] = useState('')
   const [note, setNote] = useState('')
   const [photo, setPhoto] = useState<File | null>(null)
-  const [photoError, setPhotoError] = useState<string | null>(null)
+  const [photoError, setPhotoError] = useState<LocalizedMessage | null>(null)
   const [saving, setSaving] = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -49,9 +52,14 @@ export function AddVisitForm({ countryCode, onDone, onCancel }: AddVisitFormProp
   // smontaggio: senza, ogni foto scelta resterebbe in memoria.
   const previewUrl = useObjectUrl(photo)
 
+  // L'ordine alfabetico segue la lingua: in italiano "Germania" non sta dove
+  // sta "Germany".
   const sortedCountries = useMemo(
-    () => [...COUNTRIES].sort((a, b) => a.name.localeCompare(b.name, 'en')),
-    [],
+    () =>
+      [...COUNTRIES]
+        .map((item) => ({ code: item.code, name: countryLabel(item.code) }))
+        .sort((a, b) => compare(a.name, b.name)),
+    [compare, countryLabel],
   )
 
   const handleFile = useCallback((file: File | null) => {
@@ -103,7 +111,7 @@ export function AddVisitForm({ countryCode, onDone, onCancel }: AddVisitFormProp
       <div className="flex flex-col gap-3">
         <div>
           <label htmlFor="visit-country" className={LABEL_CLASS}>
-            Country
+            {t('visit.country')}
           </label>
           <select
             id="visit-country"
@@ -121,7 +129,7 @@ export function AddVisitForm({ countryCode, onDone, onCancel }: AddVisitFormProp
 
         <div>
           <label htmlFor="visit-date" className={LABEL_CLASS}>
-            Date <span className="text-accent">*</span>
+            {t('visit.date')} <span className="text-accent">*</span>
           </label>
           <input
             id="visit-date"
@@ -136,14 +144,14 @@ export function AddVisitForm({ countryCode, onDone, onCancel }: AddVisitFormProp
 
         <div>
           <label htmlFor="visit-city" className={LABEL_CLASS}>
-            City <span className="text-subtle">(optional)</span>
+            {t('visit.city')} <span className="text-subtle">{t('common.optional')}</span>
           </label>
           <input
             id="visit-city"
             type="text"
             value={city}
             maxLength={120}
-            placeholder="Kyoto"
+            placeholder={t('visit.cityPlaceholder')}
             onChange={(event) => setCity(event.target.value)}
             className={`${FIELD_CLASS} mt-1`}
           />
@@ -151,14 +159,14 @@ export function AddVisitForm({ countryCode, onDone, onCancel }: AddVisitFormProp
 
         <div>
           <label htmlFor="visit-note" className={LABEL_CLASS}>
-            Note <span className="text-subtle">(optional)</span>
+            {t('visit.note')} <span className="text-subtle">{t('common.optional')}</span>
           </label>
           <textarea
             id="visit-note"
             rows={2}
             value={note}
             maxLength={2000}
-            placeholder="What do you want to remember?"
+            placeholder={t('visit.notePlaceholder')}
             onChange={(event) => setNote(event.target.value)}
             className={`${FIELD_CLASS} mt-1 resize-none`}
           />
@@ -166,7 +174,10 @@ export function AddVisitForm({ countryCode, onDone, onCancel }: AddVisitFormProp
 
         <div>
           <span className={LABEL_CLASS}>
-            Photo <span className="text-subtle">(optional, max {formatBytes(MAX_PHOTO_BYTES)})</span>
+            {t('visit.photo')}{' '}
+            <span className="text-subtle">
+              {t('visit.photoLimit', { size: formatBytes(MAX_PHOTO_BYTES) })}
+            </span>
           </span>
 
           {previewUrl === null ? (
@@ -175,7 +186,7 @@ export function AddVisitForm({ countryCode, onDone, onCancel }: AddVisitFormProp
               className="mt-1 flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-edge-strong px-3 py-2.5 text-sm text-muted transition-colors hover:border-accent/40 hover:text-slate-400"
             >
               <ImagePlus size={16} aria-hidden />
-              Choose a photo
+              {t('visit.choose')}
             </label>
           ) : (
             <div className="relative mt-1 overflow-hidden rounded-xl border border-edge">
@@ -183,7 +194,7 @@ export function AddVisitForm({ countryCode, onDone, onCancel }: AddVisitFormProp
               <button
                 type="button"
                 onClick={clearPhoto}
-                aria-label="Remove photo"
+                aria-label={t('visit.removePhoto')}
                 className="absolute right-2 top-2 rounded-lg bg-black/70 p-1.5 text-slate-300 transition-colors hover:text-white"
               >
                 <X size={14} aria-hidden />
@@ -202,7 +213,7 @@ export function AddVisitForm({ countryCode, onDone, onCancel }: AddVisitFormProp
 
           {photoError !== null && (
             <p role="alert" className="mt-1.5 text-xs leading-relaxed text-red-300">
-              {photoError}
+              {t(photoError.key, photoError.vars)}
             </p>
           )}
         </div>
@@ -214,14 +225,14 @@ export function AddVisitForm({ countryCode, onDone, onCancel }: AddVisitFormProp
           onClick={onCancel}
           className="flex-1 rounded-xl border border-edge px-3 py-2 text-sm font-medium text-slate-400 transition-colors hover:border-edge-strong hover:bg-surface-raised"
         >
-          Cancel
+          {t('common.cancel')}
         </button>
         <button
           type="submit"
           disabled={saving}
           className="flex-1 rounded-xl bg-accent px-3 py-2 text-sm font-semibold text-base-900 transition-all hover:bg-accent-soft hover:shadow-glow disabled:opacity-60"
         >
-          {saving ? 'Saving…' : 'Save trip'}
+          {saving ? t('visit.saving') : t('visit.save')}
         </button>
       </div>
     </form>

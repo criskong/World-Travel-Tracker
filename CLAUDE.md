@@ -389,6 +389,46 @@ Proposta non ancora applicata: saltare Dexie quando
 worker sta gia servendo la pagina. Toglie la duplicazione in produzione e
 lascia la cache dove serve. **Da non implementare senza conferma.**
 
+### Bilingue e installazione (dopo la fase 6)
+
+**Inglese e italiano, senza librerie.** Due dizionari di oggetti letterali in
+`src/i18n/`. `en.ts` e la fonte delle chiavi e `it.ts` e tipizzato come
+`Record<keyof typeof en, string>`: **dimenticare una traduzione non produce una
+stringa inglese a sorpresa in mezzo alla pagina, non compila**. Le chiavi che
+finiscono con `#` sono plurali e si risolvono con `Intl.PluralRules`.
+
+**Lo store e i validatori non parlano nessuna lingua.** Producono
+`LocalizedMessage` — una chiave piu i suoi parametri — e chi disegna traduce.
+Con delle stringhe gia tradotte in stato, cambiare lingua non cambierebbe i
+messaggi gia prodotti. Vale anche per `achievements.ts`, che restituisce un
+`detail` strutturato invece di una frase.
+
+**I nomi dei Paesi in italiano arrivano da `Intl.DisplayNames`**, non da un
+dizionario nostro: copre tutti e 250 i codici del nostro elenco (verificato da
+un test) e i dati ICU sono nel browser, quindi funziona offline. In inglese si
+usano invece i nomi curati di `countries.ts`, che restano la fonte di verita.
+Un'insidia: per ICU `ZZ` e la "regione sconosciuta" e risponderebbe "Regione
+sconosciuta" a un codice inventato — per questo si interroga `Intl` solo dopo
+aver verificato che il codice esista in `countries.ts`.
+
+Ricerca e ordinamento nella lista Paesi seguono la lingua, ma **la ricerca
+accetta anche il nome inglese**: chi ha l'app in italiano e pensa in inglese
+trova comunque la Germania digitando "Germany".
+
+**La lingua e una preferenza, non un dato di viaggio.** Vive nella tabella
+Dexie `preferences` (schema v3): non entra nel backup, e `resetData` non la
+tocca. Azzerare i propri viaggi non deve rimettere l'app in inglese. Al primo
+avvio si parte da `navigator.languages`, cosi un utente italiano non vede un
+lampo di inglese in attesa di IndexedDB.
+
+**Installazione: due mondi diversi, non uno.** Su Android e Chrome desktop il
+browser lancia `beforeinstallprompt`; va intercettato con `preventDefault()` e
+conservato, perche `prompt()` si puo chiamare UNA SOLA VOLTA e solo dentro un
+gesto dell'utente. Su iOS quell'evento non esiste e non esistera: Safari
+consente l'installazione solo dal menu Condividi, quindi l'unica cosa utile e
+scrivere i passaggi. Il bottone in Impostazioni compare solo dove serve, e
+dove l'app e gia installata lo dice invece di riproporsi.
+
 ### Archiviazione non disponibile (decisa in fase 2)
 
 Quando IndexedDB non è utilizzabile (Safari in navigazione privata) l'app non

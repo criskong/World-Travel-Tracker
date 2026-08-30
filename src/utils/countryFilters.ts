@@ -31,25 +31,46 @@ function foldCase(value: string): string {
     .trim()
 }
 
-export function matchesQuery(country: Country, query: string): boolean {
+/**
+ * Come si chiama un Paese ai fini di ricerca e ordinamento.
+ * Il default e il nome inglese di `countries.ts`; la pagina passa quello
+ * tradotto. Le due fonti convivono di proposito nella ricerca: chi ha l'app in
+ * italiano puo comunque digitare "Germany" e trovare la Germania, ed e un
+ * comportamento che si nota solo quando manca.
+ */
+export type CountryNaming = (country: Country) => string
+
+const DEFAULT_NAMING: CountryNaming = (country) => country.name
+
+export function matchesQuery(
+  country: Country,
+  query: string,
+  naming: CountryNaming = DEFAULT_NAMING,
+): boolean {
   const needle = foldCase(query)
   if (needle.length === 0) return true
-  return foldCase(country.name).includes(needle) || foldCase(country.code).includes(needle)
+  return (
+    foldCase(naming(country)).includes(needle) ||
+    foldCase(country.name).includes(needle) ||
+    foldCase(country.code).includes(needle)
+  )
 }
 
 export function filterCountries(
   countries: readonly Country[],
   filters: CountryFilters,
   visited: ReadonlySet<string>,
+  naming: CountryNaming = DEFAULT_NAMING,
+  collate: (a: string, b: string) => number = (a, b) => a.localeCompare(b, 'en'),
 ): Country[] {
   return countries
     .filter((country) => {
       if (filters.continent !== null && country.continent !== filters.continent) return false
       if (filters.status === 'visited' && !visited.has(country.code)) return false
       if (filters.status === 'not-visited' && visited.has(country.code)) return false
-      return matchesQuery(country, filters.query)
+      return matchesQuery(country, filters.query, naming)
     })
-    .sort((a, b) => a.name.localeCompare(b.name, 'en'))
+    .sort((a, b) => collate(naming(a), naming(b)))
 }
 
 export interface CountryCounts {
@@ -63,11 +84,12 @@ export function countByStatus(
   countries: readonly Country[],
   filters: CountryFilters,
   visited: ReadonlySet<string>,
+  naming: CountryNaming = DEFAULT_NAMING,
 ): CountryCounts {
   const scoped = countries.filter(
     (country) =>
       (filters.continent === null || country.continent === filters.continent) &&
-      matchesQuery(country, filters.query),
+      matchesQuery(country, filters.query, naming),
   )
   const visitedCount = scoped.filter((country) => visited.has(country.code)).length
   return {

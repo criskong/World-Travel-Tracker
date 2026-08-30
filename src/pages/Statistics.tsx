@@ -4,6 +4,7 @@ import { ProgressBar } from '../components/UI/ProgressBar'
 import { useTravelStore } from '../store/travelStore'
 import { computeStats, unvisitedByContinent, visitsPerYear } from '../utils/stats'
 import { flagEmoji } from '../utils/flag'
+import { useTranslation } from '../i18n/useTranslation'
 import type { ContinentBacklog, ContinentStat, YearCount } from '../utils/stats'
 
 /**
@@ -15,6 +16,7 @@ import type { ContinentBacklog, ContinentStat, YearCount } from '../utils/stats'
  * stesso codice a più feature (CLAUDE.md, Dati geografici).
  */
 export default function Statistics() {
+  const { t } = useTranslation()
   const manuallyMarked = useTravelStore((state) => state.manuallyMarked)
   const visits = useTravelStore((state) => state.visits)
 
@@ -28,11 +30,17 @@ export default function Statistics() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 pb-10 pt-5 sm:px-6">
       <header>
-        <h1 className="text-lg font-semibold tracking-tight text-slate-100">Statistics</h1>
+        <h1 className="text-lg font-semibold tracking-tight text-slate-100">
+          {t('statistics.title')}
+        </h1>
         <p className="mt-1 text-sm text-muted">
           {nothingYet
-            ? 'Numbers will appear here as soon as you mark your first country.'
-            : `${stats.visitedCount} of ${stats.totalCount} countries · ${stats.worldPercentage}% of the world`}
+            ? t('statistics.subtitleEmpty')
+            : t('statistics.subtitle', {
+                visited: stats.visitedCount,
+                total: stats.totalCount,
+                percentage: stats.worldPercentage,
+              })}
         </p>
       </header>
 
@@ -40,32 +48,35 @@ export default function Statistics() {
         <EmptyState />
       ) : (
         <>
-          <section aria-label="Totals" className="grid animate-fade-up gap-3 sm:grid-cols-2">
+          <section
+            aria-label={t('statistics.totals')}
+            className="grid animate-fade-up gap-3 sm:grid-cols-2"
+          >
             <Tile
               icon={<MapPin size={16} aria-hidden />}
-              label="Countries visited"
+              label={t('stats.countriesVisited')}
               value={`${stats.visitedCount}`}
               suffix={`/ ${stats.totalCount}`}
             />
             <Tile
               icon={<Globe size={16} aria-hidden />}
-              label="Of the world"
+              label={t('stats.ofTheWorld')}
               value={`${stats.worldPercentage}`}
               suffix="%"
             />
             <Tile
               icon={<Compass size={16} aria-hidden />}
-              label="Territories"
+              label={t('stats.territories')}
               value={`${stats.territoriesVisited}`}
-              suffix="beyond the 195"
+              suffix={t('stats.beyondThe195')}
             />
             <Tile
               icon={<Plane size={16} aria-hidden />}
-              label="Trips recorded"
+              label={t('statistics.tripsRecorded')}
               value={`${stats.visitCount}`}
-              suffix={`across ${stats.countriesWithVisits} ${
-                stats.countriesWithVisits === 1 ? 'country' : 'countries'
-              }`}
+              suffix={t('statistics.acrossCountries', {
+                countries: t('common.country#', { count: stats.countriesWithVisits }),
+              })}
             />
           </section>
 
@@ -112,15 +123,19 @@ function SectionTitle({ children, hint }: { children: React.ReactNode; hint?: st
 }
 
 function ContinentDetail({ stats }: { stats: ContinentStat[] }) {
+  const { t, continent } = useTranslation()
+
   return (
-    <section aria-label="By continent" className="animate-fade-up">
-      <SectionTitle hint="Of the 195 UN states">By continent</SectionTitle>
+    <section aria-label={t('stats.byContinent')} className="animate-fade-up">
+      <SectionTitle hint={t('statistics.ofThe195')}>{t('stats.byContinent')}</SectionTitle>
 
       <ul className="mt-3 flex flex-col gap-4">
         {stats.map((item) => (
           <li key={item.continent}>
             <div className="flex items-baseline justify-between gap-3">
-              <span className="text-sm font-medium text-slate-300">{item.continent}</span>
+              <span className="text-sm font-medium text-slate-300">
+                {continent(item.continent)}
+              </span>
               <span className="text-xs tabular-nums text-muted">
                 <span className="text-slate-300">{item.visited}</span>
                 <span className="text-subtle"> / {item.total}</span>
@@ -130,13 +145,18 @@ function ContinentDetail({ stats }: { stats: ContinentStat[] }) {
             <div className="mt-2">
               <ProgressBar
                 value={item.total === 0 ? 0 : item.visited / item.total}
-                label={`${item.continent}: ${item.visited} of ${item.total} countries, ${item.percentage}%`}
+                label={t('stats.continentBar', {
+                  continent: continent(item.continent),
+                  visited: item.visited,
+                  total: item.total,
+                  percentage: item.percentage,
+                })}
               />
             </div>
             <p className="mt-1.5 text-xs text-subtle">
               {item.total - item.visited === 0
-                ? 'Every country visited'
-                : `${item.total - item.visited} still to go`}
+                ? t('statistics.everyCountryVisited')
+                : t('statistics.stillToGo', { count: item.total - item.visited })}
             </p>
           </li>
         ))}
@@ -146,15 +166,18 @@ function ContinentDetail({ stats }: { stats: ContinentStat[] }) {
 }
 
 function StillToVisit({ backlog }: { backlog: ContinentBacklog[] }) {
+  const { t, continent, country: countryLabel } = useTranslation()
   const remaining = backlog.reduce((total, item) => total + item.missing.length, 0)
 
   return (
-    <section aria-label="Still to visit" className="animate-fade-up">
-      <SectionTitle hint={`${remaining} left`}>Still to visit</SectionTitle>
+    <section aria-label={t('statistics.stillToVisit')} className="animate-fade-up">
+      <SectionTitle hint={t('statistics.left', { count: remaining })}>
+        {t('statistics.stillToVisit')}
+      </SectionTitle>
 
       {remaining === 0 ? (
         <p className="card mt-3 px-5 py-6 text-center text-sm text-slate-400">
-          Nothing left. You have visited every one of the 195 UN states.
+          {t('statistics.nothingLeft')}
         </p>
       ) : (
         <ul className="mt-3 flex flex-col gap-2">
@@ -164,9 +187,11 @@ function StillToVisit({ backlog }: { backlog: ContinentBacklog[] }) {
               <li key={item.continent}>
                 <details className="card group overflow-hidden">
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-surface-raised">
-                    <span className="text-sm font-medium text-slate-300">{item.continent}</span>
+                    <span className="text-sm font-medium text-slate-300">
+                      {continent(item.continent)}
+                    </span>
                     <span className="flex items-center gap-2 text-xs tabular-nums text-muted">
-                      {item.missing.length} to go
+                      {t('statistics.toGo', { count: item.missing.length })}
                       <span
                         aria-hidden
                         className="text-subtle transition-transform group-open:rotate-90"
@@ -182,7 +207,7 @@ function StillToVisit({ backlog }: { backlog: ContinentBacklog[] }) {
                         className="flex items-center gap-1.5 rounded-lg border border-edge bg-base-900/40 px-2 py-1 text-xs text-slate-400"
                       >
                         <span aria-hidden>{flagEmoji(country.code)}</span>
-                        {country.name}
+                        {countryLabel(country.code)}
                       </li>
                     ))}
                   </ul>
@@ -196,32 +221,39 @@ function StillToVisit({ backlog }: { backlog: ContinentBacklog[] }) {
 }
 
 function TripsByYear({ years }: { years: YearCount[] }) {
+  const { t } = useTranslation()
   const peak = years.reduce((max, item) => Math.max(max, item.count), 0)
   const total = years.reduce((sum, item) => sum + item.count, 0)
 
   return (
-    <section aria-label="Trips by year" className="animate-fade-up">
-      <SectionTitle hint={years.length > 0 ? `${total} trips` : undefined}>
-        Trips by year
+    <section aria-label={t('statistics.tripsByYear')} className="animate-fade-up">
+      <SectionTitle hint={years.length > 0 ? t('common.trip#', { count: total }) : undefined}>
+        {t('statistics.tripsByYear')}
       </SectionTitle>
 
       {years.length === 0 ? (
         <p className="card mt-3 flex items-center gap-3 px-5 py-6 text-sm text-muted">
           <CalendarRange size={18} strokeWidth={1.6} className="shrink-0 text-subtle" aria-hidden />
-          No trips recorded yet. Add one from a country to see how your years compare.
+          {t('statistics.noTripsYet')}
         </p>
       ) : (
         <div className="card mt-3 overflow-x-auto scroll-area p-4">
           <ol
             className="flex min-w-full items-end gap-2"
             style={{ minHeight: '9rem' }}
-            aria-label={`Trips per year, from ${years[0]?.year} to ${years[years.length - 1]?.year}`}
+            aria-label={t('statistics.chartLabel', {
+              first: years[0]?.year ?? '',
+              last: years[years.length - 1]?.year ?? '',
+            })}
           >
             {years.map((item) => (
               <li
                 key={item.year}
                 className="flex min-w-9 flex-1 flex-col items-center justify-end gap-2"
-                title={`${item.year}: ${item.count} ${item.count === 1 ? 'trip' : 'trips'}`}
+                title={t('statistics.yearTrips', {
+                  year: item.year,
+                  trips: t('common.trip#', { count: item.count }),
+                })}
               >
                 <span className="text-xs tabular-nums text-muted">
                   {item.count > 0 ? item.count : ''}
@@ -246,19 +278,20 @@ function TripsByYear({ years }: { years: YearCount[] }) {
 
 /** Primo avvio: nessun dato. Un invito, non una pagina vuota. */
 function EmptyState() {
+  const { t } = useTranslation()
+
   return (
     <section className="card animate-fade-up px-6 py-12 text-center">
       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-accent-dim">
         <ChartColumn size={22} strokeWidth={1.6} className="text-accent" aria-hidden />
       </div>
       <h2 className="mt-4 text-base font-semibold tracking-tight text-slate-100">
-        Nothing to measure yet
+        {t('statistics.empty.title')}
       </h2>
       <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted">
-        Mark a country as visited, or add a trip with its date, and this page will fill up:
-        coverage by continent, what is left to see, and how your years compare.
+        {t('statistics.empty.body')}
       </p>
-      <p className="mt-4 text-xs text-subtle">0 / 195 countries · 0% of the world</p>
+      <p className="mt-4 text-xs text-subtle">{t('stats.empty.footer')}</p>
     </section>
   )
 }

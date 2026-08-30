@@ -4,12 +4,13 @@ import { CountryDetailsDrawer } from '../components/CountryDetails/CountryDetail
 import { useTravelStore } from '../store/travelStore'
 import { groupVisitsByYear } from '../utils/tripsTimeline'
 import { flagEmoji } from '../utils/flag'
-import { formatVisitDate } from '../utils/formatDate'
+import { useTranslation } from '../i18n/useTranslation'
 import { usePhoto } from '../hooks/usePhoto'
 import type { TimelineEntry } from '../utils/tripsTimeline'
 
 /** Timeline dei viaggi, raggruppata per anno dal più recente. */
 export default function Trips() {
+  const { t } = useTranslation()
   const visits = useTravelStore((state) => state.visits)
   const [selectedCode, setSelectedCode] = useState<string | null>(null)
 
@@ -20,13 +21,14 @@ export default function Trips() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 pb-10 pt-5 sm:px-6">
       <header>
-        <h1 className="text-lg font-semibold tracking-tight text-slate-100">Trips</h1>
+        <h1 className="text-lg font-semibold tracking-tight text-slate-100">{t('trips.title')}</h1>
         <p className="mt-1 text-sm text-muted">
           {visits.length === 0
-            ? 'Everywhere you’ve been, in order.'
-            : `${visits.length} ${visits.length === 1 ? 'trip' : 'trips'} across ${years.length} ${
-                years.length === 1 ? 'year' : 'years'
-              }`}
+            ? t('trips.subtitleEmpty')
+            : t('trips.subtitle', {
+                trips: t('common.trip#', { count: visits.length }),
+                years: t('common.year#', { count: years.length }),
+              })}
         </p>
       </header>
 
@@ -35,14 +37,14 @@ export default function Trips() {
       ) : (
         <div className="flex flex-col gap-8">
           {years.map((group) => (
-            <section key={group.year} aria-label={`Trips in ${group.year}`}>
+            <section key={group.year} aria-label={t('trips.inYear', { year: group.year })}>
               <div className="flex items-baseline gap-3">
                 <h2 className="font-mono text-sm font-semibold tracking-wider text-accent">
                   {group.year}
                 </h2>
                 <span className="h-px flex-1 bg-edge" />
                 <span className="text-xs tabular-nums text-subtle">
-                  {group.entries.length} {group.entries.length === 1 ? 'trip' : 'trips'}
+                  {t('common.trip#', { count: group.entries.length })}
                 </span>
               </div>
 
@@ -69,6 +71,7 @@ function TimelineRow({
   onSelect: (code: string) => void
 }) {
   const { visit, country } = entry
+  const { country: countryLabel, date } = useTranslation()
   const { url } = usePhoto(visit.photoId)
 
   return (
@@ -84,10 +87,10 @@ function TimelineRow({
 
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-medium text-slate-200">
-            {country?.name ?? visit.countryCode}
+            {country ? countryLabel(country.code) : visit.countryCode}
           </span>
           <span className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted">
-            <span className="tabular-nums">{formatVisitDate(visit.date)}</span>
+            <span className="tabular-nums">{date(visit.date)}</span>
             {visit.city && (
               <>
                 <span aria-hidden>·</span>
@@ -119,17 +122,18 @@ function TimelineRow({
 }
 
 function EmptyState() {
+  const { t } = useTranslation()
+
   return (
     <div className="card px-6 py-12 text-center">
       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-accent-dim">
         <Plane size={22} strokeWidth={1.6} className="text-accent" aria-hidden />
       </div>
       <h2 className="mt-4 text-base font-semibold tracking-tight text-slate-100">
-        No trips yet
+        {t('trips.empty.title')}
       </h2>
       <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted">
-        Open a country from the globe or from the Countries list, then add a visit with the date,
-        the city and a photo. They will show up here, newest first.
+        {t('trips.empty.body')}
       </p>
     </div>
   )

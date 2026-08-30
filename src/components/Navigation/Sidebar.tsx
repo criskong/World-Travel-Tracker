@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import { useTranslation } from '../../i18n/useTranslation'
 import { NAV_ITEMS } from './navItems'
 
 /**
@@ -6,6 +7,8 @@ import { NAV_ITEMS } from './navItems'
  * Non è sopra il canvas WebGL, quindi può permettersi uno sfondo pieno.
  */
 export function Sidebar() {
+  const { t } = useTranslation()
+
   return (
     <aside className="hidden w-60 shrink-0 flex-col border-r border-edge bg-base-800/60 pl-safe-l pt-safe-t lg:flex">
       <div className="px-5 py-6">
@@ -17,7 +20,7 @@ export function Sidebar() {
         </p>
       </div>
 
-      <nav aria-label="Main navigation" className="flex-1 px-3">
+      <nav aria-label={t('nav.primary')} className="flex-1 px-3">
         <ul className="flex flex-col gap-1">
           {NAV_ITEMS.map((item) => (
             <li key={item.to}>
@@ -42,7 +45,7 @@ export function Sidebar() {
                       aria-hidden
                       className="shrink-0"
                     />
-                    <span className="truncate">{item.label}</span>
+                    <span className="truncate">{t(item.label)}</span>
                   </>
                 )}
               </NavLink>
@@ -51,7 +54,7 @@ export function Sidebar() {
         </ul>
       </nav>
 
-      <p className="px-5 py-4 text-[11px] text-subtle">All your data stays on this device.</p>
+      <p className="px-5 py-4 text-[11px] text-subtle">{t('nav.footer')}</p>
     </aside>
   )
 }

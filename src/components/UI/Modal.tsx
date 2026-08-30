@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { useTranslation } from '../../i18n/useTranslation'
 import type { ReactNode } from 'react'
 
 interface ModalProps {
@@ -26,6 +27,7 @@ const FOCUSABLE =
  * ricomposizione per frame su mobile (CLAUDE.md, sezione Design).
  */
 export function Modal({ title, onClose, children }: ModalProps) {
+  const { t } = useTranslation()
   const panelRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -73,7 +75,7 @@ export function Modal({ title, onClose, children }: ModalProps) {
     <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">
       <button
         type="button"
-        aria-label="Close"
+        aria-label={t('common.close')}
         onClick={onClose}
         // Fuori dal giro del Tab: è il velo, non un comando da raggiungere
         // con la tastiera, che per chiudere ha già Esc.

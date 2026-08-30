@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import { useTranslation } from '../../i18n/useTranslation'
 import { NAV_ITEMS } from './navItems'
 
 /**
@@ -6,9 +7,11 @@ import { NAV_ITEMS } from './navItems'
  * senza, l'ultima riga finisce sotto il bordo dello schermo.
  */
 export function BottomNav() {
+  const { t } = useTranslation()
+
   return (
     <nav
-      aria-label="Main navigation"
+      aria-label={t('nav.primary')}
       className="shrink-0 border-t border-edge bg-base-800/95 pb-safe-b lg:hidden"
     >
       <ul className="flex items-stretch justify-between px-1">
@@ -27,7 +30,7 @@ export function BottomNav() {
               {({ isActive }) => (
                 <>
                   <item.icon size={20} strokeWidth={isActive ? 2.2 : 1.8} aria-hidden />
-                  <span className="truncate leading-none">{item.label}</span>
+                  <span className="truncate leading-none">{t(item.label)}</span>
                 </>
               )}
             </NavLink>

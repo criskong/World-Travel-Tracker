@@ -4,13 +4,14 @@ import { CalendarDays, ChevronRight, Plane } from 'lucide-react'
 import { useTravelStore } from '../../store/travelStore'
 import { recentVisits } from '../../utils/stats'
 import { flagEmoji } from '../../utils/flag'
-import { formatVisitDate } from '../../utils/formatDate'
+import { useTranslation } from '../../i18n/useTranslation'
 
 /**
  * Viaggi recenti della Home. Come `StatsSection`, si sottoscrive da sé:
  * un viaggio aggiunto non fa passare nulla dal componente del globo.
  */
 export function RecentTrips() {
+  const { t, country: countryLabel, date } = useTranslation()
   const visits = useTravelStore((state) => state.visits)
   const recent = useMemo(
     () => recentVisits({ manuallyMarked: [], visits }, 5),
@@ -18,17 +19,17 @@ export function RecentTrips() {
   )
 
   return (
-    <section aria-label="Recent trips" className="animate-fade-up">
+    <section aria-label={t('recent.title')} className="animate-fade-up">
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="text-xs font-medium uppercase tracking-wider text-muted">
-          Recent trips
+          {t('recent.title')}
         </h2>
         {recent.length > 0 && (
           <Link
             to="/trips"
             className="flex items-center gap-0.5 text-xs text-muted transition-colors hover:text-accent"
           >
-            All trips
+            {t('recent.all')}
             <ChevronRight size={13} aria-hidden />
           </Link>
         )}
@@ -40,7 +41,7 @@ export function RecentTrips() {
             <Plane size={16} strokeWidth={1.6} className="text-subtle" aria-hidden />
           </div>
           <p className="text-sm leading-relaxed text-muted">
-            No trips recorded yet. Add one from a country’s details to see it here.
+            {t('recent.empty')}
           </p>
         </div>
       ) : (
@@ -52,12 +53,12 @@ export function RecentTrips() {
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-slate-200">
-                  {country?.name ?? visit.countryCode}
+                  {country ? countryLabel(country.code) : visit.countryCode}
                   {visit.city && <span className="text-muted"> · {visit.city}</span>}
                 </p>
                 <p className="mt-0.5 flex items-center gap-1 text-xs text-muted">
                   <CalendarDays size={12} aria-hidden />
-                  {formatVisitDate(visit.date)}
+                  {date(visit.date)}
                 </p>
               </div>
             </li>

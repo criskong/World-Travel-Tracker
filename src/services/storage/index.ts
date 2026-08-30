@@ -36,3 +36,5 @@ export {
   cachedDatasetSize,
   clearCachedDatasets,
 } from './geoDataset'
+
+export { readStoredLanguage, writeStoredLanguage, clearPreferences } from './preferences'

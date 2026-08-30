@@ -36,6 +36,11 @@ export interface PhotoRow {
  * `resetData` non lo tocca — cancellarlo costringerebbe a riscaricare 3 MB
  * per aver chiesto di dimenticare i propri viaggi.
  */
+export interface PreferenceRow {
+  key: string
+  value: string
+}
+
 export interface DatasetRow {
   /** Nome del file del dataset. Cambia il file, cambia la chiave. */
   key: string
@@ -49,6 +54,7 @@ export class TravelDatabase extends Dexie {
   visits!: Table<VisitRow, string>
   photos!: Table<PhotoRow, string>
   datasets!: Table<DatasetRow, string>
+  preferences!: Table<PreferenceRow, string>
 
   constructor() {
     super(DATABASE_NAME)
@@ -65,6 +71,12 @@ export class TravelDatabase extends Dexie {
     // compare solo la tabella nuova; le tre di prima restano come sono.
     this.version(2).stores({
       datasets: '&key',
+    })
+
+    // v3: preferenze dell'interfaccia, oggi solo la lingua. Non sono dati di
+    // viaggio: restano fuori dal backup e da `resetData`.
+    this.version(3).stores({
+      preferences: '&key',
     })
   }
 }

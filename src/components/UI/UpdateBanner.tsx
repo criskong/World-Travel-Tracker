@@ -1,4 +1,5 @@
 import { Download, X } from 'lucide-react'
+import { useTranslation } from '../../i18n/useTranslation'
 
 export interface UpdateBannerProps {
   /** `true` quando c'è una versione nuova già scaricata e pronta. */
@@ -18,6 +19,7 @@ export interface UpdateBannerProps {
  * callback.
  */
 export function UpdateBanner({ visible, onUpdate, onDismiss, busy = false }: UpdateBannerProps) {
+  const { t } = useTranslation()
   if (!visible) return null
 
   return (
@@ -32,9 +34,9 @@ export function UpdateBanner({ visible, onUpdate, onDismiss, busy = false }: Upd
         </span>
 
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-slate-100">A new version is ready</p>
+          <p className="text-sm font-medium text-slate-100">{t('update.title')}</p>
           <p className="mt-0.5 text-xs text-muted">
-            Reload to get it. Your countries and trips are not affected.
+            {t('update.body')}
           </p>
         </div>
 
@@ -44,13 +46,13 @@ export function UpdateBanner({ visible, onUpdate, onDismiss, busy = false }: Upd
           disabled={busy}
           className="shrink-0 rounded-xl border border-accent/40 bg-accent/10 px-3 py-1.5 text-sm font-medium text-accent transition-colors hover:enabled:bg-accent/20 disabled:opacity-50"
         >
-          {busy ? 'Reloading…' : 'Reload'}
+          {busy ? t('update.reloading') : t('update.reload')}
         </button>
 
         <button
           type="button"
           onClick={onDismiss}
-          aria-label="Dismiss update notice"
+          aria-label={t('update.dismiss')}
           className="shrink-0 rounded-lg p-1.5 text-muted transition-colors hover:bg-white/5 hover:text-slate-300"
         >
           <X size={16} aria-hidden />

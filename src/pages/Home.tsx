@@ -4,6 +4,7 @@ import { ErrorBoundary } from '../components/UI/ErrorBoundary'
 import { CountryDetails } from '../components/CountryDetails/CountryDetails'
 import { StatsSection } from '../components/Stats/StatsSection'
 import { RecentTrips } from '../components/Timeline/RecentTrips'
+import { useTranslation } from '../i18n/useTranslation'
 
 // Il bundle three.js è pesante: fuori dal chunk iniziale.
 // `lazy` sta a livello di modulo: se stesse dentro il componente, ogni render
@@ -19,6 +20,7 @@ const GlobeView = lazy(() => import('../components/Globe/GlobeView'))
  * L'unico stato locale è il Paese selezionato, che apre CountryDetails.
  */
 export default function Home() {
+  const { t } = useTranslation()
   const [selectedIso, setSelectedIso] = useState<string | null>(null)
 
   const handleSelectCountry = useCallback((iso: string) => {
@@ -33,15 +35,13 @@ export default function Home() {
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 pb-10 pt-5 sm:px-6">
       <header>
         <h1 className="text-lg font-semibold tracking-tight text-slate-100">
-          World Travel Tracker
+          {t('home.title')}
         </h1>
-        <p className="mt-1 text-sm text-muted">
-          See where you’ve been. Discover where you’ll go next.
-        </p>
+        <p className="mt-1 text-sm text-muted">{t('home.tagline')}</p>
       </header>
 
       <section
-        aria-label="Interactive globe"
+        aria-label={t('home.globe')}
         className="relative h-[52vh] min-h-[340px] overflow-hidden rounded-2xl border border-edge bg-base-900 shadow-card sm:h-[58vh]"
       >
         {/*
@@ -53,7 +53,7 @@ export default function Home() {
           <Suspense
             fallback={
               <div className="flex h-full w-full items-center justify-center text-sm text-subtle">
-                Loading the globe…
+                {t('home.globe.loading')}
               </div>
             }
           >
@@ -83,16 +83,17 @@ export default function Home() {
  * successo, che il resto funziona lo stesso, e si offre un tentativo.
  */
 function GlobeUnavailable({ onRetry }: { onRetry: () => void }) {
+  const { t } = useTranslation()
+
   return (
     <div className="flex h-full w-full flex-col items-center justify-center gap-3 px-6 text-center">
       <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-edge bg-surface">
         <Globe2 size={22} strokeWidth={1.6} className="text-muted" aria-hidden />
       </span>
       <div>
-        <p className="text-sm font-medium text-slate-200">The globe could not be displayed</p>
+        <p className="text-sm font-medium text-slate-200">{t('home.globe.failed')}</p>
         <p className="mx-auto mt-1 max-w-xs text-xs leading-relaxed text-muted">
-          Your browser may not support 3D graphics, or they may be turned off. Everything else
-          still works: use the Countries page to mark where you have been.
+          {t('home.globe.failedHint')}
         </p>
       </div>
       <button
@@ -101,7 +102,7 @@ function GlobeUnavailable({ onRetry }: { onRetry: () => void }) {
         className="inline-flex items-center gap-2 rounded-xl border border-edge-strong bg-surface-raised px-3.5 py-1.5 text-sm text-slate-200 transition-colors hover:border-accent/40 hover:text-accent"
       >
         <RefreshCw size={14} aria-hidden />
-        Try again
+        {t('common.tryAgain')}
       </button>
     </div>
   )

@@ -1,21 +1,30 @@
 import { useCallback, useState } from 'react'
 import {
   AlertTriangle,
+  Check,
   CheckCircle2,
   Download,
   HardDrive,
   ImageOff,
+  Languages,
+  Share,
+  Smartphone,
   Trash2,
   Upload,
 } from 'lucide-react'
 import { Modal } from '../components/UI/Modal'
 import { useTravelStore } from '../store/travelStore'
+import { useInstallPrompt } from '../hooks/useInstallPrompt'
 import { BACKUP_FILENAME, downloadBackup } from '../utils/backupFile'
 import { parseTravelDataJson } from '../utils/travelDataSchema'
+import { useTranslation } from '../i18n/useTranslation'
+import { LANGUAGES, LANGUAGE_NAMES } from '../i18n/languages'
+import type { LocalizedMessage } from '../i18n/message'
+import type { Translation } from '../i18n/useTranslation'
 import type { TravelData, TravelDataExport } from '../types'
 
 /**
- * Gestione dei dati: export, import, reset.
+ * Gestione dell'app: lingua, installazione, export, import, reset.
  *
  * Due regole valgono per tutta la pagina.
  * 1. Quello che un'azione farà si dice PRIMA di poterla lanciare, non dopo:
@@ -29,16 +38,18 @@ import type { TravelData, TravelDataExport } from '../types'
 interface PendingImport {
   fileName: string
   data: TravelData
-  warnings: string[]
+  warnings: LocalizedMessage[]
 }
 
 type ImportState =
   | { status: 'idle' }
   | { status: 'reading' }
-  | { status: 'rejected'; errors: string[] }
-  | { status: 'done'; countries: number; trips: number; warnings: string[] }
+  | { status: 'rejected'; errors: LocalizedMessage[] }
+  | { status: 'done'; countries: number; trips: number; warnings: LocalizedMessage[] }
 
 export default function Settings() {
+  const { t } = useTranslation()
+
   const manuallyMarked = useTravelStore((state) => state.manuallyMarked)
   const visits = useTravelStore((state) => state.visits)
   const storage = useTravelStore((state) => state.storage)
@@ -53,11 +64,15 @@ export default function Settings() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 pb-10 pt-5 sm:px-6">
       <header>
-        <h1 className="text-lg font-semibold tracking-tight text-slate-100">Settings</h1>
-        <p className="mt-1 text-sm text-muted">
-          Your data never leaves this device. Back it up yourself, or start over.
-        </p>
+        <h1 className="text-lg font-semibold tracking-tight text-slate-100">
+          {t('settings.title')}
+        </h1>
+        <p className="mt-1 text-sm text-muted">{t('settings.subtitle')}</p>
       </header>
+
+      <LanguageSection />
+
+      <InstallSection />
 
       <ExportSection
         countries={manuallyMarked.length}
@@ -95,8 +110,8 @@ function SectionCard({
 }: {
   icon: React.ReactNode
   title: string
-  description: string
-  children: React.ReactNode
+  description: React.ReactNode
+  children?: React.ReactNode
   tone?: 'default' | 'danger'
 }) {
   return (
@@ -148,19 +163,138 @@ function Notice({
   tone,
   children,
 }: {
-  tone: 'warning' | 'success' | 'error'
+  tone: 'warning' | 'success' | 'error' | 'neutral'
   children: React.ReactNode
 }) {
   const styles = {
     warning: 'border-amber-500/30 bg-amber-500/5 text-amber-200/90',
     success: 'border-accent/30 bg-accent-dim text-accent',
     error: 'border-red-500/30 bg-red-500/5 text-red-200',
+    neutral: 'border-edge bg-base-900/40 text-slate-400',
   }[tone]
 
   return (
     <div className={`mt-4 rounded-xl border px-3.5 py-3 text-xs leading-relaxed ${styles}`}>
       {children}
     </div>
+  )
+}
+
+/** Elenco di messaggi già tradotti. */
+function MessageList({
+  messages,
+  translation,
+  className,
+}: {
+  messages: readonly LocalizedMessage[]
+  translation: Translation
+  className?: string
+}) {
+  if (messages.length === 0) return null
+  return (
+    <ul className={`mt-1.5 list-inside list-disc space-y-0.5 ${className ?? ''}`}>
+      {messages.map((message) => (
+        <li key={`${message.key}-${JSON.stringify(message.vars ?? {})}`}>
+          {translation.t(message.key, message.vars)}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function LanguageSection() {
+  const { t, language } = useTranslation()
+  const setLanguage = useTravelStore((state) => state.setLanguage)
+
+  return (
+    <SectionCard
+      icon={<Languages size={17} strokeWidth={1.8} aria-hidden />}
+      title={t('settings.language.title')}
+      description={t('settings.language.description')}
+    >
+      <div role="radiogroup" aria-label={t('settings.language.title')} className="mt-4 flex gap-2">
+        {LANGUAGES.map((option) => {
+          const active = option === language
+          return (
+            <button
+              key={option}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              onClick={() => void setLanguage(option)}
+              className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium transition-colors ${
+                active
+                  ? 'border-accent/40 bg-accent-dim text-accent'
+                  : 'border-edge-strong bg-surface-raised text-slate-200 hover:border-accent/40 hover:text-accent'
+              }`}
+            >
+              {active && <Check size={14} aria-hidden />}
+              {LANGUAGE_NAMES[option]}
+            </button>
+          )
+        })}
+      </div>
+    </SectionCard>
+  )
+}
+
+/**
+ * Installazione.
+ *
+ * Su Android il browser offre l'installazione da solo e qui c'è un bottone
+ * vero. Su iPhone e iPad non esiste nessuna API equivalente: Safari la
+ * consente solo dal menu Condividi, quindi l'unica cosa utile che si può fare
+ * è scrivere i passaggi.
+ */
+function InstallSection() {
+  const { t } = useTranslation()
+  const { state, busy, install, iosNeedsSafari } = useInstallPrompt()
+
+  return (
+    <SectionCard
+      icon={<Smartphone size={17} strokeWidth={1.8} aria-hidden />}
+      title={t('settings.install.title')}
+      description={t('settings.install.description')}
+    >
+      {state === 'installed' && (
+        <Notice tone="success">
+          <span className="flex items-center gap-2">
+            <CheckCircle2 size={14} aria-hidden />
+            {t('settings.install.installed')}
+          </span>
+        </Notice>
+      )}
+
+      {state === 'available' && (
+        <div className="mt-4">
+          <ActionButton onClick={() => void install()} disabled={busy}>
+            <Download size={15} aria-hidden />
+            {t('settings.install.button')}
+          </ActionButton>
+        </div>
+      )}
+
+      {state === 'ios' && (
+        <Notice tone="neutral">
+          <p className="flex items-center gap-2 font-medium text-slate-300">
+            <Share size={14} aria-hidden />
+            {t('settings.install.iosTitle')}
+          </p>
+          <ol className="mt-2 list-inside list-decimal space-y-1">
+            <li>{t('settings.install.ios1')}</li>
+            <li>{t('settings.install.ios2')}</li>
+            <li>{t('settings.install.ios3')}</li>
+          </ol>
+          {iosNeedsSafari && (
+            <p className="mt-2 text-amber-200/90">{t('settings.install.iosNote')}</p>
+          )}
+        </Notice>
+      )}
+
+      {state === 'unavailable' && (
+        <Notice tone="neutral">{t('settings.install.unavailable')}</Notice>
+      )}
+    </SectionCard>
   )
 }
 
@@ -177,6 +311,7 @@ function ExportSection({
   isEmpty: boolean
   onExport: () => TravelDataExport
 }) {
+  const { t } = useTranslation()
   const [saved, setSaved] = useState(false)
 
   const handleExport = useCallback(() => {
@@ -187,10 +322,11 @@ function ExportSection({
   return (
     <SectionCard
       icon={<Download size={17} strokeWidth={1.8} aria-hidden />}
-      title="Export a backup"
-      description={`Saves ${countries} manually marked ${
-        countries === 1 ? 'country' : 'countries'
-      } and ${trips} ${trips === 1 ? 'trip' : 'trips'} to a JSON file you keep yourself.`}
+      title={t('settings.export.title')}
+      description={t('settings.export.description', {
+        countries: t('common.country#', { count: countries }),
+        trips: t('common.trip#', { count: trips }),
+      })}
     >
       {/*
         L'avviso sulle foto sta PRIMA del bottone, per richiesta esplicita:
@@ -201,16 +337,9 @@ function ExportSection({
         <span className="flex gap-2">
           <ImageOff size={14} className="mt-px shrink-0" aria-hidden />
           <span>
-            <strong className="font-semibold">Photos are not included.</strong> The file holds
-            countries, dates, cities and notes only.
-            {photos > 0 && (
-              <>
-                {' '}
-                The {photos} {photos === 1 ? 'photo' : 'photos'} you attached{' '}
-                {photos === 1 ? 'stays' : 'stay'} on this device and{' '}
-                will be lost if you clear your browser data.
-              </>
-            )}
+            <strong className="font-semibold">{t('settings.export.noPhotos')}</strong>{' '}
+            {t('settings.export.noPhotosBody')}
+            {photos > 0 && <> {t('settings.export.photosStay#', { count: photos })}</>}
           </span>
         </span>
       </Notice>
@@ -218,22 +347,18 @@ function ExportSection({
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <ActionButton onClick={handleExport} disabled={isEmpty}>
           <Download size={15} aria-hidden />
-          Export backup
+          {t('settings.export.button')}
         </ActionButton>
         <span className="font-mono text-xs text-subtle">{BACKUP_FILENAME}</span>
       </div>
 
-      {isEmpty && (
-        <p className="mt-3 text-xs text-subtle">
-          Nothing to export yet — mark a country or add a trip first.
-        </p>
-      )}
+      {isEmpty && <p className="mt-3 text-xs text-subtle">{t('settings.export.nothing')}</p>}
 
       {saved && !isEmpty && (
         <Notice tone="success">
           <span className="flex items-center gap-2">
             <CheckCircle2 size={14} aria-hidden />
-            Backup saved. Check your downloads folder.
+            {t('settings.export.saved')}
           </span>
         </Notice>
       )}
@@ -250,6 +375,8 @@ function ImportSection({
   currentTrips: number
   onImport: ReturnType<typeof useTravelStore.getState>['importData']
 }) {
+  const translation = useTranslation()
+  const { t } = translation
   const [state, setState] = useState<ImportState>({ status: 'idle' })
   const [pending, setPending] = useState<PendingImport | null>(null)
 
@@ -266,7 +393,7 @@ function ImportSection({
     try {
       text = await file.text()
     } catch {
-      setState({ status: 'rejected', errors: ['Could not read that file. Try picking it again.'] })
+      setState({ status: 'rejected', errors: [{ key: 'validation.readFailed' }] })
       return
     }
 
@@ -305,8 +432,8 @@ function ImportSection({
   return (
     <SectionCard
       icon={<Upload size={17} strokeWidth={1.8} aria-hidden />}
-      title="Import a backup"
-      description="Restores a JSON file exported from this app."
+      title={t('settings.import.title')}
+      description={t('settings.import.description')}
     >
       {/*
         DECISIONE: l'import SOSTITUISCE, non fonde. Un backup è una fotografia
@@ -319,10 +446,11 @@ function ImportSection({
         <span className="flex gap-2">
           <AlertTriangle size={14} className="mt-px shrink-0" aria-hidden />
           <span>
-            <strong className="font-semibold">Importing replaces everything.</strong> Your current{' '}
-            {currentCountries} marked {currentCountries === 1 ? 'country' : 'countries'} and{' '}
-            {currentTrips} {currentTrips === 1 ? 'trip' : 'trips'} will be discarded, not merged.
-            Export a backup first if you want to keep them.
+            <strong className="font-semibold">{t('settings.import.replaces')}</strong>{' '}
+            {t('settings.import.replacesBody', {
+              countries: t('common.country#', { count: currentCountries }),
+              trips: t('common.trip#', { count: currentTrips }),
+            })}
           </span>
         </span>
       </Notice>
@@ -330,7 +458,7 @@ function ImportSection({
       <div className="mt-4">
         <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-edge-strong bg-surface-raised px-4 py-2 text-sm font-medium text-slate-200 transition-colors hover:border-accent/40 hover:text-accent">
           <Upload size={15} aria-hidden />
-          {state.status === 'reading' ? 'Reading…' : 'Choose a backup file'}
+          {state.status === 'reading' ? t('settings.import.reading') : t('settings.import.choose')}
           <input
             type="file"
             accept="application/json,.json"
@@ -342,12 +470,8 @@ function ImportSection({
 
       {state.status === 'rejected' && (
         <Notice tone="error">
-          <p className="font-semibold">This file was not imported. Your data is unchanged.</p>
-          <ul className="mt-1.5 list-inside list-disc space-y-0.5">
-            {state.errors.map((error) => (
-              <li key={error}>{error}</li>
-            ))}
-          </ul>
+          <p className="font-semibold">{t('settings.import.rejected')}</p>
+          <MessageList messages={state.errors} translation={translation} />
         </Notice>
       )}
 
@@ -355,61 +479,53 @@ function ImportSection({
         <Notice tone="success">
           <p className="flex items-center gap-2 font-semibold">
             <CheckCircle2 size={14} aria-hidden />
-            Imported {state.countries} {state.countries === 1 ? 'country' : 'countries'} and{' '}
-            {state.trips} {state.trips === 1 ? 'trip' : 'trips'}.
+            {t('settings.import.done', {
+              countries: t('common.country#', { count: state.countries }),
+              trips: t('common.trip#', { count: state.trips }),
+            })}
           </p>
-          {state.warnings.length > 0 && (
-            <ul className="mt-1.5 list-inside list-disc space-y-0.5 text-amber-200/90">
-              {state.warnings.map((warning) => (
-                <li key={warning}>{warning}</li>
-              ))}
-            </ul>
-          )}
+          <MessageList
+            messages={state.warnings}
+            translation={translation}
+            className="text-amber-200/90"
+          />
         </Notice>
       )}
 
       {pending !== null && (
-        <Modal title="Replace all your data?" onClose={() => setPending(null)}>
+        <Modal title={t('settings.import.confirmTitle')} onClose={() => setPending(null)}>
           <h2 className="text-base font-semibold tracking-tight text-slate-100">
-            Replace all your data?
+            {t('settings.import.confirmTitle')}
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-slate-400">
-            <span className="font-mono text-xs text-muted">{pending.fileName}</span> contains{' '}
-            <strong className="font-semibold text-slate-200">
-              {pending.data.manuallyMarked.length}{' '}
-              {pending.data.manuallyMarked.length === 1 ? 'country' : 'countries'}
-            </strong>{' '}
-            and{' '}
-            <strong className="font-semibold text-slate-200">
-              {pending.data.visits.length} {pending.data.visits.length === 1 ? 'trip' : 'trips'}
-            </strong>
-            .
+            {t('settings.import.confirmBody', {
+              file: pending.fileName,
+              countries: t('common.country#', { count: pending.data.manuallyMarked.length }),
+              trips: t('common.trip#', { count: pending.data.visits.length }),
+            })}
           </p>
 
           {hasSomethingToLose ? (
             <p className="mt-3 text-sm leading-relaxed text-amber-200/90">
-              This replaces your current {currentCountries} marked{' '}
-              {currentCountries === 1 ? 'country' : 'countries'} and {currentTrips}{' '}
-              {currentTrips === 1 ? 'trip' : 'trips'}. They cannot be recovered afterwards.
+              {t('settings.import.confirmLoss', {
+                countries: t('common.country#', { count: currentCountries }),
+                trips: t('common.trip#', { count: currentTrips }),
+              })}
             </p>
           ) : (
-            <p className="mt-3 text-sm text-muted">
-              You have nothing saved right now, so nothing will be lost.
-            </p>
+            <p className="mt-3 text-sm text-muted">{t('settings.import.confirmNoLoss')}</p>
           )}
 
-          {pending.warnings.length > 0 && (
-            <ul className="mt-3 list-inside list-disc space-y-0.5 text-xs text-amber-200/90">
-              {pending.warnings.map((warning) => (
-                <li key={warning}>{warning}</li>
-              ))}
-            </ul>
-          )}
+          <MessageList
+            messages={pending.warnings}
+            translation={translation}
+            className="mt-3 text-xs text-amber-200/90"
+          />
 
           <div className="mt-5 flex justify-end gap-2">
-            <ActionButton onClick={() => setPending(null)}>Cancel</ActionButton>
+            <ActionButton onClick={() => setPending(null)}>{t('common.cancel')}</ActionButton>
             <ActionButton onClick={() => void confirmImport()} tone="danger">
-              Replace my data
+              {t('settings.import.confirmButton')}
             </ActionButton>
           </div>
         </Modal>
@@ -431,6 +547,7 @@ function ResetSection({
   photos: number
   onReset: () => Promise<void>
 }) {
+  const { t } = useTranslation()
   const [asking, setAsking] = useState(false)
   const [done, setDone] = useState(false)
 
@@ -443,8 +560,8 @@ function ResetSection({
   return (
     <SectionCard
       icon={<Trash2 size={17} strokeWidth={1.8} aria-hidden />}
-      title="Reset everything"
-      description="Erases every marked country, every trip and every photo from this device. There is no undo."
+      title={t('settings.reset.title')}
+      description={t('settings.reset.description')}
       tone="danger"
     >
       <div className="mt-4">
@@ -457,47 +574,44 @@ function ResetSection({
           tone="danger"
         >
           <Trash2 size={15} aria-hidden />
-          Reset all data
+          {t('settings.reset.button')}
         </ActionButton>
       </div>
 
-      {isEmpty && !done && (
-        <p className="mt-3 text-xs text-subtle">Nothing stored — there is nothing to reset.</p>
-      )}
+      {isEmpty && !done && <p className="mt-3 text-xs text-subtle">{t('settings.reset.nothing')}</p>}
 
       {done && (
         <Notice tone="success">
           <span className="flex items-center gap-2">
             <CheckCircle2 size={14} aria-hidden />
-            Everything was erased. You are back to zero countries.
+            {t('settings.reset.done')}
           </span>
         </Notice>
       )}
 
       {asking && (
-        <Modal title="Erase everything?" onClose={() => setAsking(false)}>
+        <Modal title={t('settings.reset.confirmTitle')} onClose={() => setAsking(false)}>
           <h2 className="text-base font-semibold tracking-tight text-slate-100">
-            Erase everything?
+            {t('settings.reset.confirmTitle')}
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-slate-400">
-            This deletes {countries} marked {countries === 1 ? 'country' : 'countries'}, {trips}{' '}
-            {trips === 1 ? 'trip' : 'trips'}
-            {photos > 0 && (
-              <>
-                {' '}
-                and {photos} {photos === 1 ? 'photo' : 'photos'}
-              </>
-            )}
-            . It cannot be undone.
+            {t('settings.reset.confirmBody', {
+              countries: t('common.country#', { count: countries }),
+              trips: t('common.trip#', { count: trips }),
+              photos:
+                photos > 0
+                  ? t('settings.reset.confirmPhotos', {
+                      photos: t('common.photo#', { count: photos }),
+                    })
+                  : '',
+            })}
           </p>
-          <p className="mt-3 text-sm text-muted">
-            If you might want this back, cancel and export a backup first.
-          </p>
+          <p className="mt-3 text-sm text-muted">{t('settings.reset.confirmHint')}</p>
 
           <div className="mt-5 flex justify-end gap-2">
-            <ActionButton onClick={() => setAsking(false)}>Cancel</ActionButton>
+            <ActionButton onClick={() => setAsking(false)}>{t('common.cancel')}</ActionButton>
             <ActionButton onClick={() => void confirm()} tone="danger">
-              Erase everything
+              {t('settings.reset.confirmButton')}
             </ActionButton>
           </div>
         </Modal>
@@ -511,21 +625,22 @@ function StorageSection({
   message,
 }: {
   storage: 'unknown' | 'available' | 'unavailable'
-  message: string | null
+  message: LocalizedMessage | null
 }) {
+  const { t } = useTranslation()
+
   return (
     <SectionCard
       icon={<HardDrive size={17} strokeWidth={1.8} aria-hidden />}
-      title="Where your data lives"
-      description="Everything is stored in this browser, on this device. No account, no server, no sync — which also means nobody else can restore it for you."
+      title={t('settings.storage.title')}
+      description={t('settings.storage.description')}
     >
       {storage === 'unavailable' ? (
-        <Notice tone="error">{message ?? 'Local storage is unavailable in this browser.'}</Notice>
+        <Notice tone="error">
+          {message ? t(message.key, message.vars) : t('settings.storage.unavailable')}
+        </Notice>
       ) : (
-        <p className="mt-3 text-xs text-subtle">
-          Local storage is working. Clearing your browser data, or uninstalling the app, deletes
-          everything — a backup file is the only copy that survives.
-        </p>
+        <p className="mt-3 text-xs text-subtle">{t('settings.storage.ok')}</p>
       )}
     </SectionCard>
   )

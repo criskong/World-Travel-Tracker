@@ -22,6 +22,16 @@ function RouteFallback() {
 
 export default function App() {
   const hydrate = useTravelStore((state) => state.hydrate)
+  const language = useTravelStore((state) => state.language)
+
+  /*
+   * `<html lang>` segue la lingua scelta. Non e un dettaglio estetico: e
+   * l'attributo con cui uno screen reader decide come pronunciare il testo, e
+   * con cui il browser sceglie la sillabazione.
+   */
+  useEffect(() => {
+    document.documentElement.lang = language
+  }, [language])
 
   // L'idratazione parte subito, senza aspettare il chunk del globo.
   // `hydrate` è idempotente: StrictMode la invoca due volte in sviluppo.

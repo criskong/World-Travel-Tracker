@@ -41,7 +41,7 @@ describe('parseTravelData', () => {
     const result = parseTravelData({ visits: [] })
     expect(result.ok).toBe(false)
     if (result.ok) return
-    expect(result.errors.join(' ')).toContain('manuallyMarked')
+    expect(result.errors.map((error) => error.key)).toContain('validation.missingMarked')
   })
 
   it('rifiuta un file di una versione di formato futura', () => {
@@ -54,8 +54,9 @@ describe('parseTravelData', () => {
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.data.manuallyMarked).toEqual(['IT'])
-    expect(result.warnings).toHaveLength(1)
-    expect(result.warnings[0]).toContain('2')
+    expect(result.warnings).toEqual([
+      { key: 'validation.skippedCountries#', vars: { count: 2 } },
+    ])
   })
 
   it('rimuove i duplicati in manuallyMarked', () => {
@@ -80,7 +81,10 @@ describe('parseTravelData', () => {
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.data.visits.map((visit) => visit.id)).toEqual(['ok'])
-    expect(result.warnings.join(' ')).toContain('4')
+    expect(result.warnings).toContainEqual({
+      key: 'validation.skippedTrips#',
+      vars: { count: 4 },
+    })
   })
 
   it('scarta i viaggi con id duplicato', () => {
@@ -157,8 +161,10 @@ describe('parseTravelDataJson', () => {
     if (result.ok) return
     expect(result.errors).toHaveLength(1)
     // Messaggio per un essere umano, mai il testo dell'eccezione.
-    expect(result.errors[0]).toContain('not valid JSON')
-    expect(result.errors[0]).not.toMatch(/JSON\.parse|Unexpected token|SyntaxError/)
+    // La chiave, non la frase: il testo dipende dalla lingua, il contratto no.
+    expect(result.errors[0]?.key).toBe('validation.notJson')
+    // E comunque il messaggio non deve mai riportare l'eccezione.
+    expect(JSON.stringify(result.errors)).not.toMatch(/JSON\.parse|Unexpected token|SyntaxError/)
   })
 
   it.each([
@@ -177,7 +183,7 @@ describe('parseTravelDataJson', () => {
     )
     expect(result.ok).toBe(false)
     if (result.ok) return
-    expect(result.errors[0]).toContain('newer version')
+    expect(result.errors[0]).toEqual({ key: 'validation.futureFormat', vars: { version: 99 } })
   })
 
   it('accetta un backup senza campo di versione: e il formato 1', () => {
@@ -200,8 +206,10 @@ describe('parseTravelDataJson', () => {
     if (!result.ok) return
     expect(result.data.manuallyMarked).toEqual(['IT'])
     expect(result.data.visits.map((visit) => visit.countryCode)).toEqual(['JP'])
-    expect(result.warnings.join(' ')).toContain('unknown ISO code')
-    expect(result.warnings.join(' ')).toContain('skipped')
+    expect(result.warnings.map((warning) => warning.key)).toEqual([
+      'validation.skippedCountries#',
+      'validation.skippedTrips#',
+    ])
   })
 
   it('un file di un altra app non passa', () => {
@@ -210,6 +218,6 @@ describe('parseTravelDataJson', () => {
     )
     expect(result.ok).toBe(false)
     if (result.ok) return
-    expect(result.errors.join(' ')).toContain('manuallyMarked')
+    expect(result.errors.map((error) => error.key)).toContain('validation.missingMarked')
   })
 })

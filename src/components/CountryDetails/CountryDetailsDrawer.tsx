@@ -1,4 +1,5 @@
 import { CountryDetails } from './CountryDetails'
+import { useTranslation } from '../../i18n/useTranslation'
 
 interface CountryDetailsDrawerProps {
   code: string | null
@@ -13,13 +14,14 @@ interface CountryDetailsDrawerProps {
  * compositing su mobile.
  */
 export function CountryDetailsDrawer({ code, onClose }: CountryDetailsDrawerProps) {
+  const { t } = useTranslation()
   if (code === null) return null
 
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-end sm:items-stretch">
       <button
         type="button"
-        aria-label="Close details"
+        aria-label={t('details.close')}
         onClick={onClose}
         className="absolute inset-0 cursor-default bg-black/60 animate-fade-in"
       />

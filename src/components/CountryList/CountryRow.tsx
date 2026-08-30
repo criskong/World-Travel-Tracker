@@ -2,6 +2,7 @@ import { memo } from 'react'
 import { Check, ChevronRight } from 'lucide-react'
 import { flagEmoji } from '../../utils/flag'
 import { isTerritory } from '../../utils/countryFilters'
+import { useTranslation } from '../../i18n/useTranslation'
 import type { Country } from '../../types'
 
 interface CountryRowProps {
@@ -24,6 +25,8 @@ export const CountryRow = memo(function CountryRow({
   tripCount,
   onSelect,
 }: CountryRowProps) {
+  const { t, country: countryLabel, continent } = useTranslation()
+
   return (
     <li>
       <button
@@ -37,26 +40,26 @@ export const CountryRow = memo(function CountryRow({
 
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-1.5">
-            <span className="truncate text-sm font-medium text-slate-200">{country.name}</span>
+            <span className="truncate text-sm font-medium text-slate-200">
+              {countryLabel(country.code)}
+            </span>
             {isTerritory(country) && (
               <span
-                title="Not a UN member state — not counted in the 195"
+                title={t('common.territoryHint')}
                 className="shrink-0 rounded-full border border-edge px-1.5 text-[10px] uppercase tracking-wide text-subtle"
               >
-                Territory
+                {t('common.territory')}
               </span>
             )}
           </span>
           <span className="mt-0.5 flex items-center gap-1.5 text-xs text-muted">
-            <span>{country.continent}</span>
+            <span>{continent(country.continent)}</span>
             <span aria-hidden>·</span>
             <span className="font-mono tracking-wider">{country.code}</span>
             {tripCount > 0 && (
               <>
                 <span aria-hidden>·</span>
-                <span>
-                  {tripCount} {tripCount === 1 ? 'trip' : 'trips'}
-                </span>
+                <span>{t('common.trip#', { count: tripCount })}</span>
               </>
             )}
           </span>
@@ -65,7 +68,7 @@ export const CountryRow = memo(function CountryRow({
         {visited && (
           <span className="flex shrink-0 items-center gap-1 rounded-full bg-accent-dim px-2 py-0.5 text-[11px] font-medium text-accent">
             <Check size={11} aria-hidden />
-            Visited
+            {t('common.visited')}
           </span>
         )}
 

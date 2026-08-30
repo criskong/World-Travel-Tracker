@@ -29,19 +29,28 @@ export type AchievementId =
   | 'continent-master'
   | 'world-explorer'
 
+/**
+ * Dove si è, come DATI e non come frase fatta.
+ *
+ * Il nome e la descrizione sono chiavi di traduzione ricavate dall'`id`, e il
+ * dettaglio è una struttura: questo modulo non deve conoscere nessuna lingua,
+ * altrimenti cambiare lingua non cambierebbe le medaglie già calcolate.
+ */
+export type AchievementDetail =
+  | { kind: 'countries'; current: number; target: number }
+  | { kind: 'continent-progress'; continent: Continent; current: number; total: number }
+  | { kind: 'continent-done'; continents: Continent[] }
+  | { kind: 'none' }
+
 export interface Achievement {
   id: AchievementId
-  name: string
-  /** Cosa serve per sbloccarlo, in una riga. */
-  description: string
   unlocked: boolean
   /** Quanto si è fatto, nella stessa unità di `target`. */
   current: number
   target: number
   /** Da 0 a 1, tagliato a 1. */
   progress: number
-  /** Dove si è, in parole: "7 of 10 countries". */
-  detail: string
+  detail: AchievementDetail
 }
 
 export interface AchievementsSummary {
@@ -56,12 +65,12 @@ export interface AchievementsSummary {
 }
 
 /** Soglie in Stati ONU visitati. */
-const COUNT_MILESTONES: { id: AchievementId; name: string; target: number }[] = [
-  { id: 'first-step', name: 'First Step', target: 1 },
-  { id: 'explorer', name: 'Explorer', target: 10 },
-  { id: 'travel-addict', name: 'Travel Addict', target: 25 },
-  { id: 'world-traveler', name: 'World Traveler', target: 50 },
-  { id: 'globe-trotter', name: 'Globe Trotter', target: 100 },
+const COUNT_MILESTONES: { id: AchievementId; target: number }[] = [
+  { id: 'first-step', target: 1 },
+  { id: 'explorer', target: 10 },
+  { id: 'travel-addict', target: 25 },
+  { id: 'world-traveler', target: 50 },
+  { id: 'globe-trotter', target: 100 },
 ]
 
 export interface ContinentCompletion {
@@ -99,19 +108,14 @@ export function countUnMembersVisited(data: TravelData): number {
 
 function make(
   id: AchievementId,
-  name: string,
-  description: string,
   current: number,
   target: number,
-  detail: string,
+  detail: AchievementDetail,
 ): Achievement {
-  const capped = Math.min(current, target)
   return {
     id,
-    name,
-    description,
     unlocked: current >= target,
-    current: capped,
+    current: Math.min(current, target),
     target,
     progress: target <= 0 ? 0 : Math.min(1, current / target),
     detail,
@@ -140,43 +144,43 @@ export function computeAchievements(data: TravelData): AchievementsSummary {
   const mastered = completion.filter((item) => item.complete)
 
   const all: Achievement[] = COUNT_MILESTONES.map((milestone) =>
-    make(
-      milestone.id,
-      milestone.name,
-      `Visit ${milestone.target} ${milestone.target === 1 ? 'country' : 'countries'}`,
-      visitedCount,
-      milestone.target,
-      `${Math.min(visitedCount, milestone.target)} of ${milestone.target} countries`,
-    ),
+    make(milestone.id, visitedCount, milestone.target, {
+      kind: 'countries',
+      current: Math.min(visitedCount, milestone.target),
+      target: milestone.target,
+    }),
   )
 
   // Continent Master si misura sul continente più vicino: è quello che dice
   // davvero quanto manca alla medaglia.
   const focus = mastered[0] ?? closestContinent(completion)
+  const continentDetail: AchievementDetail =
+    mastered.length > 0
+      ? { kind: 'continent-done', continents: mastered.map((item) => item.continent) }
+      : focus
+        ? {
+            kind: 'continent-progress',
+            continent: focus.continent,
+            current: focus.visited,
+            total: focus.total,
+          }
+        : { kind: 'none' }
+
   all.push(
     make(
       'continent-master',
-      'Continent Master',
-      'Visit every country of a single continent',
       mastered.length > 0 ? 1 : (focus?.visited ?? 0),
       mastered.length > 0 ? 1 : (focus?.total ?? 1),
-      mastered.length > 0
-        ? `${mastered.map((item) => item.continent).join(', ')} completed`
-        : focus
-          ? `${focus.visited} of ${focus.total} in ${focus.continent}`
-          : 'No continent available',
+      continentDetail,
     ),
   )
 
   all.push(
-    make(
-      'world-explorer',
-      'World Explorer',
-      'Visit every country in the world',
-      visitedCount,
-      TOTAL_UN_MEMBERS,
-      `${visitedCount} of ${TOTAL_UN_MEMBERS} countries`,
-    ),
+    make('world-explorer', visitedCount, TOTAL_UN_MEMBERS, {
+      kind: 'countries',
+      current: visitedCount,
+      target: TOTAL_UN_MEMBERS,
+    }),
   )
 
   const unlocked = all.filter((item) => item.unlocked)

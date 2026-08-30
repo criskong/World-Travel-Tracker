@@ -1,5 +1,7 @@
 import { Check, Compass, Crown, Footprints, Globe2, Lock, Map, Plane, Trophy } from 'lucide-react'
 import { ProgressBar } from '../UI/ProgressBar'
+import { useTranslation } from '../../i18n/useTranslation'
+import { achievementText } from '../../i18n/achievementText'
 import type { LucideIcon } from 'lucide-react'
 import type { Achievement, AchievementId } from '../../utils/achievements'
 
@@ -18,6 +20,9 @@ const ICONS: Record<AchievementId, LucideIcon> = {
 }
 
 export function AchievementCard({ achievement }: { achievement: Achievement }) {
+  const translation = useTranslation()
+  const { t } = translation
+  const text = achievementText(translation, achievement)
   const Icon = ICONS[achievement.id]
   const { unlocked } = achievement
 
@@ -42,24 +47,24 @@ export function AchievementCard({ achievement }: { achievement: Achievement }) {
               unlocked ? 'text-slate-100' : 'text-slate-400'
             }`}
           >
-            {achievement.name}
+            {text.name}
           </h3>
           {unlocked ? (
-            <Check size={14} className="shrink-0 text-accent" aria-label="Unlocked" />
+            <Check size={14} className="shrink-0 text-accent" aria-label={t('achievements.unlockedLabel')} />
           ) : (
-            <Lock size={12} className="shrink-0 text-subtle" aria-label="Locked" />
+            <Lock size={12} className="shrink-0 text-subtle" aria-label={t('achievements.lockedLabel')} />
           )}
         </div>
 
-        <p className="mt-0.5 text-xs text-muted">{achievement.description}</p>
+        <p className="mt-0.5 text-xs text-muted">{text.description}</p>
 
         {unlocked ? (
-          <p className="mt-2 text-xs text-accent">{achievement.detail}</p>
+          <p className="mt-2 text-xs text-accent">{text.detail}</p>
         ) : (
           <div className="mt-2.5 flex items-center gap-3">
             <ProgressBar
               value={achievement.progress}
-              label={`${achievement.name}: ${achievement.detail}`}
+              label={`${text.name}: ${text.detail}`}
               tone="muted"
             />
             <span className="shrink-0 text-xs tabular-nums text-muted">

@@ -22,7 +22,10 @@ funzionante offline dopo il primo caricamento.
   di cosa resta da vedere, distribuzione dei viaggi per anno.
 - **Achievement** — sette traguardi che si sbloccano da soli, dal primo Paese
   al mondo intero.
-- **Impostazioni** — export e import del backup in JSON, reset completo.
+- **Impostazioni** — lingua (inglese e italiano), installazione come app,
+  export e import del backup in JSON, reset completo.
+- **Bilingue** — interfaccia, nomi dei Paesi, date e numeri seguono la lingua
+  scelta. Al primo avvio si parte da quella del sistema.
 
 ---
 
@@ -40,6 +43,7 @@ funzionante offline dopo il primo caricamento.
 | Routing | react-router-dom 7 |
 | PWA | vite-plugin-pwa 1.3 (Workbox) |
 | Icone | lucide-react |
+| i18n | nessuna libreria: dizionari tipizzati + `Intl` |
 | Test | Vitest 4 + Testing Library + fake-indexeddb |
 
 Una sola copia di `three` nel bundle: verificabile con `npm ls three`.
@@ -150,6 +154,7 @@ recuperarli al posto tuo.
 | `visits` | I viaggi: Paese, data, citta, nota, riferimento alla foto |
 | `photos` | Le foto come `Blob`, mai in base64 |
 | `datasets` | Copia locale del GeoJSON, per non riscaricarlo a ogni avvio |
+| `preferences` | Lingua dell'interfaccia. Non entra nel backup |
 
 Nessun componente parla con Dexie direttamente: si passa sempre da
 `src/services/storage/`, e un test (`storageLayer.test.ts`) fallisce se
@@ -201,6 +206,7 @@ src/
     Achievements/ CountryDetails/ CountryList/ Globe/
     Navigation/ Stats/ Timeline/ UI/
   data/countries/               dataset, elenco ISO, resolver, riduzione geometrica
+  i18n/                         dizionari, traduzione, nomi localizzati
   hooks/
   pages/                        Home, Countries, Trips, Statistics, Achievements, Settings
   services/storage/             unico punto di accesso a Dexie
@@ -242,6 +248,17 @@ Risultato misurato: 99.613 -> 40.139 vertici, build delle mesh 1.613 -> 334 ms,
 e nessun blocco del thread principale. La regola inviolabile: il poligono piu
 grande di ogni feature non si scarta mai, e un test verifica che tutti e 195
 gli Stati ONU conservino la geometria.
+
+### Bilingue senza librerie
+
+`en.ts` e la fonte delle chiavi; `it.ts` e tipizzato su di essa, quindi una
+traduzione dimenticata **non compila** invece di comparire in inglese in mezzo
+a una pagina italiana. Store e validatori non producono frasi ma chiavi con i
+loro parametri: cosi cambiare lingua cambia anche i messaggi gia in stato.
+
+I nomi dei Paesi in italiano arrivano da `Intl.DisplayNames` — 250 codici su
+250, dati gia presenti nel browser e quindi disponibili offline — invece che
+da un dizionario da mantenere a mano.
 
 ### Il denominatore e 195
 
