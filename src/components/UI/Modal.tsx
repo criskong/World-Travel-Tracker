@@ -87,7 +87,7 @@ export function Modal({ title, onClose, children }: ModalProps) {
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="relative w-full max-w-md animate-slide-in rounded-2xl border border-edge-strong bg-base-800 p-5 shadow-card"
+        className="scroll-area relative max-h-[85dvh] w-full max-w-md animate-slide-in overflow-y-auto overscroll-contain rounded-2xl border border-edge-strong bg-base-800 p-5 shadow-card"
       >
         {children}
       </div>

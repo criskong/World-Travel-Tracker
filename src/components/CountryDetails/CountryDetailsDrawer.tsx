@@ -25,7 +25,7 @@ export function CountryDetailsDrawer({ code, onClose }: CountryDetailsDrawerProp
         onClick={onClose}
         className="absolute inset-0 cursor-default bg-black/60 animate-fade-in"
       />
-      <div className="relative flex max-h-[85dvh] w-full animate-slide-in flex-col rounded-t-2xl border border-edge-strong bg-base-800 pb-safe-b shadow-card sm:max-h-none sm:w-96 sm:rounded-none sm:rounded-l-2xl sm:border-y-0 sm:border-r-0">
+      <div className="relative flex max-h-[85dvh] w-full animate-slide-in flex-col overflow-hidden rounded-t-2xl border border-edge-strong bg-base-800 pb-safe-b shadow-card sm:h-full sm:max-h-none sm:w-96 sm:rounded-none sm:rounded-l-2xl sm:border-y-0 sm:border-r-0">
         <CountryDetails code={code} onClose={onClose} />
       </div>
     </div>

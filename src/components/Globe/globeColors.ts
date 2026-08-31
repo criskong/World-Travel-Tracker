@@ -6,19 +6,36 @@
  * senza dover montare un canvas WebGL.
  */
 
-export const COLOR_UNVISITED = 'rgba(148, 163, 184, 0.32)'
+/*
+ * Le terre emerse restano grigie desaturate come dice la specifica, ma piu
+ * presenti: a 0,32 di opacita su un oceano quasi nero i continenti erano una
+ * foschia, e un mappamondo dove non si distingue la terra dal mare non fa
+ * effetto per quanto sia elegante.
+ */
+export const COLOR_UNVISITED = 'rgba(139, 156, 182, 0.55)'
 /** Feature senza codice ISO: visibile ma non interattiva. */
-export const COLOR_UNRESOLVED = 'rgba(100, 116, 139, 0.16)'
-export const COLOR_HOVER = 'rgba(203, 213, 225, 0.55)'
-export const COLOR_VISITED = 'rgba(56, 189, 248, 0.85)'
-export const COLOR_SIDE = 'rgba(15, 23, 42, 0.65)'
-export const COLOR_STROKE = 'rgba(15, 23, 42, 0.9)'
-export const COLOR_GLOBE = '#0b1220'
-export const COLOR_BACKGROUND = '#05070c'
+export const COLOR_UNRESOLVED = 'rgba(100, 116, 139, 0.22)'
+export const COLOR_HOVER = 'rgba(226, 236, 250, 0.78)'
+export const COLOR_VISITED = 'rgba(56, 189, 248, 0.92)'
+
+/** Le pareti dell'estrusione. Neutre di norma, accese sotto un Paese visitato. */
+export const COLOR_SIDE = 'rgba(8, 15, 30, 0.72)'
+export const COLOR_SIDE_VISITED = 'rgba(56, 189, 248, 0.42)'
+export const COLOR_STROKE = 'rgba(5, 10, 20, 0.85)'
+
+/** L'oceano: blu profondo invece del quasi-nero, cosi la sfera ha un volume. */
+export const COLOR_GLOBE = '#0a1a33'
+/**
+ * Sfondo del canvas TRASPARENTE: il cielo stellato lo disegna la CSS dietro
+ * al WebGL (`GlobeSky`). Costa zero per frame e non tocca la scena 3D.
+ */
+export const COLOR_BACKGROUND = 'rgba(0, 0, 0, 0)'
 
 const ALTITUDE_UNRESOLVED = 0.006
 const ALTITUDE_BASE = 0.01
-const ALTITUDE_HOVER = 0.028
+/** I Paesi visitati stanno in rilievo: si vedono anche di taglio, sul bordo. */
+const ALTITUDE_VISITED = 0.022
+const ALTITUDE_HOVER = 0.034
 
 export interface PolygonPaintInput {
   /** Codice ISO del poligono, `null` se non risolvibile. */
@@ -102,7 +119,19 @@ export function polygonCapColor({
   return mixColors(origin, target, transition)
 }
 
-export function polygonAltitude({ iso, hoveredIso }: PolygonPaintInput): number {
+export function polygonAltitude({ iso, visited, hoveredIso }: PolygonPaintInput): number {
   if (iso === null) return ALTITUDE_UNRESOLVED
-  return hoveredIso === iso ? ALTITUDE_HOVER : ALTITUDE_BASE
+  if (hoveredIso === iso) return ALTITUDE_HOVER
+  return visited.has(iso) ? ALTITUDE_VISITED : ALTITUDE_BASE
+}
+
+/**
+ * Colore delle pareti laterali dell'estrusione.
+ *
+ * Sotto un Paese visitato sono accese: e quello che fa sembrare il rilievo
+ * illuminato da dentro invece che un gradino grigio.
+ */
+export function polygonSideColor({ iso, visited }: PolygonPaintInput): string {
+  if (iso !== null && visited.has(iso)) return COLOR_SIDE_VISITED
+  return COLOR_SIDE
 }

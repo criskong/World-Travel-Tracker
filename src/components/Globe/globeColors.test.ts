@@ -2,11 +2,14 @@ import { describe, expect, it } from 'vitest'
 import {
   mixColors,
   COLOR_HOVER,
+  COLOR_SIDE,
+  COLOR_SIDE_VISITED,
   COLOR_UNRESOLVED,
   COLOR_UNVISITED,
   COLOR_VISITED,
   polygonAltitude,
   polygonCapColor,
+  polygonSideColor,
 } from './globeColors'
 
 const none: ReadonlySet<string> = new Set()
@@ -47,10 +50,36 @@ describe('polygonAltitude', () => {
     expect(hover).toBeGreaterThan(base)
   })
 
+  it('tiene in rilievo i Paesi visitati, sotto a quello in hover', () => {
+    const base = polygonAltitude({ iso: 'IT', visited: none, hoveredIso: null })
+    const visited = polygonAltitude({ iso: 'IT', visited: new Set(['IT']), hoveredIso: null })
+    const hover = polygonAltitude({ iso: 'IT', visited: new Set(['IT']), hoveredIso: 'IT' })
+
+    expect(visited).toBeGreaterThan(base)
+    expect(hover).toBeGreaterThan(visited)
+  })
+
   it('tiene le feature non risolvibili più basse di tutte', () => {
     const unresolved = polygonAltitude({ iso: null, visited: none, hoveredIso: null })
     const base = polygonAltitude({ iso: 'IT', visited: none, hoveredIso: null })
     expect(unresolved).toBeLessThan(base)
+  })
+})
+
+describe('polygonSideColor', () => {
+  it('accende le pareti solo sotto un Paese visitato', () => {
+    expect(polygonSideColor({ iso: 'IT', visited: new Set(['IT']), hoveredIso: null })).toBe(
+      COLOR_SIDE_VISITED,
+    )
+    expect(polygonSideColor({ iso: 'IT', visited: none, hoveredIso: null })).toBe(COLOR_SIDE)
+  })
+
+  it("l'hover da solo non le accende: il rilievo racconta i viaggi, non il puntatore", () => {
+    expect(polygonSideColor({ iso: 'IT', visited: none, hoveredIso: 'IT' })).toBe(COLOR_SIDE)
+  })
+
+  it('regge una feature senza codice ISO', () => {
+    expect(polygonSideColor({ iso: null, visited: none, hoveredIso: null })).toBe(COLOR_SIDE)
   })
 })
 

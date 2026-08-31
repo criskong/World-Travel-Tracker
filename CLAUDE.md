@@ -473,6 +473,65 @@ riferimenti ma non le foto, che quel file non conteneva. `usePhotos` espone
 `missing` proprio per questo, e la card lo scrive: meglio dire che mancano
 delle foto che mostrarne meno in silenzio.
 
+### Il globo deve fare impatto (dopo la fase 6)
+
+Il globo era corretto ma piatto: continenti a 0,32 di opacita su un oceano
+quasi nero, sfondo nero pieno, nessun movimento. Cinque interventi, nessuno
+dei quali tocca il costo per frame in modo sensibile.
+
+- **Il cielo stellato sta in CSS/SVG, non nella scena** (`GlobeSky.tsx`).
+  Il canvas ha `backgroundColor` trasparente — `three-render-objects` crea il
+  renderer con `alpha: true`, quindi si vede attraverso — e dietro ci sono 160
+  stelle in un SVG statico piu un alone in `radial-gradient`. Una texture di
+  sfondo violerebbe "nessuna rete a runtime" o andrebbe committata; delle
+  particelle three.js costerebbero draw call a ogni frame. Cosi il browser
+  dipinge una volta e non ci torna piu. Le posizioni escono da un PRNG con
+  seme fisso calcolato all'import: le stelle non ballano fra un render e
+  l'altro.
+- **Il canvas va tenuto sopra il cielo con `relative z-10`.** Un elemento
+  posizionato dipinge sopra uno nel flusso: senza, lo strato assoluto del
+  cielo coprirebbe il globo.
+- **Le terre emerse restano grigie desaturate** come dice la sezione Design,
+  ma piu presenti (0,55) su un oceano blu profondo (`#0a1a33`) invece del
+  quasi-nero. Un mappamondo dove non si distingue la terra dal mare non fa
+  effetto per quanto sia elegante.
+- **I Paesi visitati stanno in rilievo**, non solo colorati: altitudine
+  maggiore e pareti laterali accese (`COLOR_SIDE_VISITED`). Si vedono anche
+  di taglio, sul bordo della sfera. `polygonSideColor` da qui in avanti e un
+  accessor per poligono, non una costante.
+- **Rotazione lenta che si ferma al primo gesto.** `controls().autoRotate`,
+  spento per sempre al primo `pointerdown` — continuare a girare mentre si
+  cerca di cliccare un Paese sarebbe solo fastidio — e mai acceso se il
+  sistema chiede animazioni ridotte. E gia in pausa quando Home non si vede,
+  come il resto del ciclo di rendering.
+
+### Pannelli a tutta altezza: `max-height` non basta (dopo la fase 6)
+
+Il drawer dei dettagli su mobile mostrava il contenuto tagliato in fondo e non
+si lasciava scorrere. La causa non era il `max-h-[85dvh]` ma cosa c'e dentro:
+**un contenitore con solo `max-height` non ha un'altezza definita**, quindi
+l'`h-full` del figlio si risolve in `auto`, il `flex-1 overflow-y-auto` non ha
+niente da cui scendere e il contenuto esce dal pannello. Con `overflow` visible
+e `body { overflow: hidden }` quella coda finisce fuori schermo e non e
+raggiungibile in nessun modo.
+
+La regola, da applicare a ogni pannello che ospita contenuto di lunghezza
+ignota:
+
+- il contenitore ritaglia (`overflow-hidden`) ed e `flex flex-col`;
+- il figlio si adatta con `min-h-0 flex-1`, mai con `h-full`;
+- l'area che scorre ha anche lei `min-h-0`, perche il minimo automatico di un
+  flex item e `min-content` e senza quello non scende sotto il proprio
+  contenuto.
+
+Vale per `CountryDetailsDrawer`, per `Modal` (stessa trappola: una modal alta
+su uno schermo basso perdeva i bottoni in fondo) e per il pannello di Home,
+che si salvava solo perche `inset-y-3` gli dava un'altezza definita.
+
+`interactive-widget=resizes-content` nel meta viewport completa il quadro su
+Android: senza, la tastiera copre il fondo del drawer invece di accorciare il
+viewport.
+
 ### Archiviazione non disponibile (decisa in fase 2)
 
 Quando IndexedDB non è utilizzabile (Safari in navigazione privata) l'app non

@@ -87,8 +87,8 @@ export function CountryDetails({ code, onClose }: CountryDetailsProps) {
 
   return (
     <>
-      <div className="flex h-full flex-col">
-        <div className="flex items-start gap-3 px-4 pt-4">
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div className="flex shrink-0 items-start gap-3 px-4 pt-4">
           <span aria-hidden className="text-3xl leading-none">
             {flagEmoji(country.code)}
           </span>
@@ -123,7 +123,7 @@ export function CountryDetails({ code, onClose }: CountryDetailsProps) {
           </button>
         </div>
 
-        <div className="scroll-area flex-1 overflow-y-auto px-4 pb-4 pt-3.5">
+        <div className="scroll-area min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 pt-3.5">
           <div className="flex items-center gap-2">
             <span
               className={

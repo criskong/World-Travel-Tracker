@@ -14,11 +14,12 @@ import { useTranslation } from '../../i18n/useTranslation'
 import {
   COLOR_BACKGROUND,
   COLOR_GLOBE,
-  COLOR_SIDE,
   COLOR_STROKE,
   polygonAltitude,
   polygonCapColor,
+  polygonSideColor,
 } from './globeColors'
+import { GlobeSky } from './GlobeSky'
 
 /** Sfera di base: creata una sola volta, non per render. */
 const globeMaterial = new MeshPhongMaterial({
@@ -85,6 +86,28 @@ function GlobeViewComponent({ onSelectCountry, selectedIso }: GlobeViewProps) {
     if (onScreen) globe.resumeAnimation()
     else globe.pauseAnimation()
   }, [onScreen])
+
+  /**
+   * Rotazione lenta all'apertura: e la cosa che fa sembrare vivo il globo.
+   * Si ferma per sempre al primo gesto — continuare a girare mentre si cerca
+   * di cliccare un Paese sarebbe solo fastidio — e non parte mai se il
+   * sistema chiede animazioni ridotte.
+   */
+  const [autoRotate, setAutoRotate] = useState(
+    () =>
+      typeof window.matchMedia !== 'function' ||
+      !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  )
+  const stopAutoRotate = useCallback(() => setAutoRotate(false), [])
+
+  useEffect(() => {
+    const controls = globeRef.current?.controls() as
+      | { autoRotate: boolean; autoRotateSpeed: number }
+      | undefined
+    if (!controls) return
+    controls.autoRotate = autoRotate && onScreen
+    controls.autoRotateSpeed = 0.32
+  }, [autoRotate, onScreen, stableSize])
 
   const [geo, setGeo] = useState<GeoState>({ status: 'loading' })
   const [hovered, setHovered] = useState<CountryPolygon | null>(null)
@@ -203,7 +226,10 @@ function GlobeViewComponent({ onSelectCountry, selectedIso }: GlobeViewProps) {
    * `polygonSideColor="rgba(...)"` diventerebbe `polygon['rgba(...)']`, cioè
    * `undefined`, per ogni poligono.
    */
-  const sideColor = useCallback(() => COLOR_SIDE, [])
+  const sideColor = useCallback(
+    (polygon: object) => polygonSideColor({ iso: (polygon as CountryPolygon).iso, visited, hoveredIso: null }),
+    [visited],
+  )
   const strokeColor = useCallback(() => COLOR_STROKE, [])
 
   const label = useCallback((polygon: object) => {
@@ -239,31 +265,43 @@ function GlobeViewComponent({ onSelectCountry, selectedIso }: GlobeViewProps) {
   )
 
   return (
-    <div ref={containerRef} className="relative h-full w-full overflow-hidden bg-base-900">
-      {stableSize.width > 0 && stableSize.height > 0 && (
-        <Globe
-          ref={globeRef}
-          width={stableSize.width}
-          height={stableSize.height}
-          backgroundColor={COLOR_BACKGROUND}
-          globeImageUrl={null}
-          showAtmosphere
-          atmosphereColor="#38bdf8"
-          atmosphereAltitude={0.18}
-          globeMaterial={globeMaterial}
-          polygonsData={reveal.visible}
-          polygonGeoJsonGeometry={geoJsonGeometry}
-          polygonCapColor={capColor}
-          polygonSideColor={sideColor}
-          polygonStrokeColor={strokeColor}
-          polygonAltitude={altitude}
-          polygonLabel={label}
-          polygonsTransitionDuration={0}
-          onPolygonHover={handleHover}
-          onPolygonClick={handleClick}
-          showPointerCursor={showPointerCursor}
-        />
-      )}
+    <div
+      ref={containerRef}
+      onPointerDown={stopAutoRotate}
+      className="relative h-full w-full overflow-hidden bg-base-900"
+    >
+      <GlobeSky />
+
+      {/*
+        Il canvas sta sopra il cielo: senza `relative z-10` finirebbe sotto,
+        perche un elemento posizionato dipinge sopra uno che sta nel flusso.
+      */}
+      <div className="relative z-10">
+        {stableSize.width > 0 && stableSize.height > 0 && (
+          <Globe
+            ref={globeRef}
+            width={stableSize.width}
+            height={stableSize.height}
+            backgroundColor={COLOR_BACKGROUND}
+            globeImageUrl={null}
+            showAtmosphere
+            atmosphereColor="#38bdf8"
+            atmosphereAltitude={0.22}
+            globeMaterial={globeMaterial}
+            polygonsData={reveal.visible}
+            polygonGeoJsonGeometry={geoJsonGeometry}
+            polygonCapColor={capColor}
+            polygonSideColor={sideColor}
+            polygonStrokeColor={strokeColor}
+            polygonAltitude={altitude}
+            polygonLabel={label}
+            polygonsTransitionDuration={0}
+            onPolygonHover={handleHover}
+            onPolygonClick={handleClick}
+            showPointerCursor={showPointerCursor}
+          />
+        )}
+      </div>
 
       {geo.status === 'error' && (
         <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center p-5">
