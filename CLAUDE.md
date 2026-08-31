@@ -88,9 +88,10 @@ Layer separati: UI / stato / storage / dati geografici / utility / tipi.
 
 Dark, premium, minimal, tecnologico. Il globo è il protagonista e occupa gran
 parte della schermata. Paesi non visitati: terre calde su oceano blu.
-Visitati: accent color luminoso. (Erano grigi desaturati: vedi la decisione
-"Il globo deve fare impatto".) L'interfaccia intorno resta scura e neutra —
-il caldo sta solo sul globo, che e l'unica cosa che deve sembrare un posto.
+Visitati: verde smeraldo luminoso — NON l'accent color, ed e l'unica
+eccezione in tutta l'app (vedi la decisione "Il globo deve fare impatto").
+L'interfaccia intorno resta scura e neutra col suo accent ciano: il caldo e il
+verde stanno solo sul globo, che e l'unica cosa che deve sembrare un posto.
 Card con bordi arrotondati, ombre leggere, micro-animazioni.
 Glassmorphism/blur SOLO su pannelli piccoli — mai su overlay a schermo intero
 sopra il canvas WebGL (costo prestazionale su mobile).
@@ -501,8 +502,16 @@ dei quali tocca il costo per frame in modo sensibile.
   perche la sfera prenda un riflesso invece di sembrare piatta.
   Effetto collaterale che vale piu dell'estetica: la distanza fra visitato e
   non visitato non e piu un salto di sola luminosita ma un salto di **tinta**,
-  sabbia contro ciano, che si legge in miniatura e regge anche per chi
-  distingue male i colori.
+  che si legge in miniatura e regge anche per chi distingue male i colori.
+- **I Paesi visitati sono verdi, non ciano: e l'unico posto dove il globo si
+  stacca dall'accent color dell'interfaccia.** Col ciano il problema non era
+  estetico ma semantico: su una mappa il ciano E il colore dell'acqua, e un
+  Paese visitato con la costa sembrava un lago. Sul cerchio delle tinte
+  l'oceano sta a ~210 gradi e il sabbia a ~35: i settori liberi sono il verde
+  e il magenta. Verde, perche il magenta su un pianeta non sta da nessuna
+  parte. Il tono scelto e piu chiaro del sabbia anche in scala di grigi, cosi
+  la coppia regge pure senza vedere il colore — che con un verde e un tan e
+  esattamente il caso che salta per chi confonde rosso e verde.
   Questo contraddiceva la sezione Design, che infatti e stata aggiornata: il
   caldo sta SOLO sul globo, l'interfaccia intorno resta scura e neutra.
 - **I Paesi visitati stanno in rilievo**, non solo colorati: altitudine

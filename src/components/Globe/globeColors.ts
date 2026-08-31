@@ -19,14 +19,25 @@ export const COLOR_UNVISITED = 'rgba(198, 170, 126, 0.82)'
 /** Feature senza codice ISO: visibile ma non interattiva. */
 export const COLOR_UNRESOLVED = 'rgba(150, 134, 110, 0.3)'
 export const COLOR_HOVER = 'rgba(245, 226, 189, 0.95)'
-export const COLOR_VISITED = 'rgba(86, 208, 255, 0.94)'
+/**
+ * I Paesi visitati NON usano l'accent color dell'interfaccia, ed e l'unica
+ * eccezione in tutta l'app.
+ *
+ * Il ciano dell'accent, su una mappa, e il colore dell'acqua: un Paese
+ * visitato con la costa finiva per sembrare un lago invece che terra. Il
+ * verde smeraldo e lontano sia dal blu dell'oceano sia dal sabbia della terra
+ * — sul cerchio delle tinte sono i due settori liberi — ed e piu chiaro del
+ * sabbia anche in scala di grigi, quindi i due si distinguono anche senza
+ * vedere il colore.
+ */
+export const COLOR_VISITED = 'rgba(74, 240, 176, 0.95)'
 
 /**
  * Le pareti dell'estrusione: lo spessore della terra, quindi un bruno scuro.
  * Sotto un Paese visitato si accendono.
  */
 export const COLOR_SIDE = 'rgba(64, 47, 31, 0.85)'
-export const COLOR_SIDE_VISITED = 'rgba(56, 189, 248, 0.5)'
+export const COLOR_SIDE_VISITED = 'rgba(52, 211, 153, 0.55)'
 /** I confini: scuri e caldi, per staccare due Paesi vicini senza urlare. */
 export const COLOR_STROKE = 'rgba(38, 27, 18, 0.55)'
 
