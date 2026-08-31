@@ -87,8 +87,11 @@ Layer separati: UI / stato / storage / dati geografici / utility / tipi.
 ## Design
 
 Dark, premium, minimal, tecnologico. Il globo è il protagonista e occupa gran
-parte della schermata. Paesi non visitati: grigi desaturati. Visitati: accent
-color luminoso. Card con bordi arrotondati, ombre leggere, micro-animazioni.
+parte della schermata. Paesi non visitati: terre calde su oceano blu.
+Visitati: accent color luminoso. (Erano grigi desaturati: vedi la decisione
+"Il globo deve fare impatto".) L'interfaccia intorno resta scura e neutra —
+il caldo sta solo sul globo, che e l'unica cosa che deve sembrare un posto.
+Card con bordi arrotondati, ombre leggere, micro-animazioni.
 Glassmorphism/blur SOLO su pannelli piccoli — mai su overlay a schermo intero
 sopra il canvas WebGL (costo prestazionale su mobile).
 Desktop: sidebar. Mobile: bottom navigation, safe-area insets gestite.
@@ -491,10 +494,17 @@ dei quali tocca il costo per frame in modo sensibile.
 - **Il canvas va tenuto sopra il cielo con `relative z-10`.** Un elemento
   posizionato dipinge sopra uno nel flusso: senza, lo strato assoluto del
   cielo coprirebbe il globo.
-- **Le terre emerse restano grigie desaturate** come dice la sezione Design,
-  ma piu presenti (0,55) su un oceano blu profondo (`#0a1a33`) invece del
-  quasi-nero. Un mappamondo dove non si distingue la terra dal mare non fa
-  effetto per quanto sia elegante.
+- **Terre calde su oceano blu.** Il primo tentativo teneva i grigi desaturati
+  della specifica, solo piu presenti: era corretto e restava inerte — un
+  diagramma, non un pianeta. Ora la terra e sabbia (`rgba(198, 170, 126, .82)`)
+  e l'oceano un blu saturo (`#0b2f57`), con un filo di lucido sul materiale
+  perche la sfera prenda un riflesso invece di sembrare piatta.
+  Effetto collaterale che vale piu dell'estetica: la distanza fra visitato e
+  non visitato non e piu un salto di sola luminosita ma un salto di **tinta**,
+  sabbia contro ciano, che si legge in miniatura e regge anche per chi
+  distingue male i colori.
+  Questo contraddiceva la sezione Design, che infatti e stata aggiornata: il
+  caldo sta SOLO sul globo, l'interfaccia intorno resta scura e neutra.
 - **I Paesi visitati stanno in rilievo**, non solo colorati: altitudine
   maggiore e pareti laterali accese (`COLOR_SIDE_VISITED`). Si vedono anche
   di taglio, sul bordo della sfera. `polygonSideColor` da qui in avanti e un

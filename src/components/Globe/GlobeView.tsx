@@ -24,7 +24,10 @@ import { GlobeSky } from './GlobeSky'
 /** Sfera di base: creata una sola volta, non per render. */
 const globeMaterial = new MeshPhongMaterial({
   color: new Color(COLOR_GLOBE),
-  shininess: 6,
+  // Un po' di lucido: l'oceano prende il riflesso della luce e la sfera
+  // smette di sembrare piatta.
+  shininess: 18,
+  specular: new Color('#1b4a7a'),
 })
 
 type GeoState =

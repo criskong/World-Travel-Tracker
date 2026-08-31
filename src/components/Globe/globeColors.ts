@@ -7,24 +7,31 @@
  */
 
 /*
- * Le terre emerse restano grigie desaturate come dice la specifica, ma piu
- * presenti: a 0,32 di opacita su un oceano quasi nero i continenti erano una
- * foschia, e un mappamondo dove non si distingue la terra dal mare non fa
- * effetto per quanto sia elegante.
+ * Terre calde su oceano blu, non grigio su nero.
+ *
+ * Il grigio desaturato della prima versione era corretto e inerte: il globo
+ * sembrava un diagramma, non un pianeta. La terra ha un colore, e quel colore
+ * e caldo; la separazione fra visitato e non visitato passa cosi da un salto
+ * di sola luminosita a un salto di TINTA — sabbia contro ciano — che si legge
+ * anche in miniatura e anche a chi distingue male i colori.
  */
-export const COLOR_UNVISITED = 'rgba(139, 156, 182, 0.55)'
+export const COLOR_UNVISITED = 'rgba(198, 170, 126, 0.82)'
 /** Feature senza codice ISO: visibile ma non interattiva. */
-export const COLOR_UNRESOLVED = 'rgba(100, 116, 139, 0.22)'
-export const COLOR_HOVER = 'rgba(226, 236, 250, 0.78)'
-export const COLOR_VISITED = 'rgba(56, 189, 248, 0.92)'
+export const COLOR_UNRESOLVED = 'rgba(150, 134, 110, 0.3)'
+export const COLOR_HOVER = 'rgba(245, 226, 189, 0.95)'
+export const COLOR_VISITED = 'rgba(86, 208, 255, 0.94)'
 
-/** Le pareti dell'estrusione. Neutre di norma, accese sotto un Paese visitato. */
-export const COLOR_SIDE = 'rgba(8, 15, 30, 0.72)'
-export const COLOR_SIDE_VISITED = 'rgba(56, 189, 248, 0.42)'
-export const COLOR_STROKE = 'rgba(5, 10, 20, 0.85)'
+/**
+ * Le pareti dell'estrusione: lo spessore della terra, quindi un bruno scuro.
+ * Sotto un Paese visitato si accendono.
+ */
+export const COLOR_SIDE = 'rgba(64, 47, 31, 0.85)'
+export const COLOR_SIDE_VISITED = 'rgba(56, 189, 248, 0.5)'
+/** I confini: scuri e caldi, per staccare due Paesi vicini senza urlare. */
+export const COLOR_STROKE = 'rgba(38, 27, 18, 0.55)'
 
-/** L'oceano: blu profondo invece del quasi-nero, cosi la sfera ha un volume. */
-export const COLOR_GLOBE = '#0a1a33'
+/** L'oceano. Blu profondo e saturo: e meta della superficie che si vede. */
+export const COLOR_GLOBE = '#0b2f57'
 /**
  * Sfondo del canvas TRASPARENTE: il cielo stellato lo disegna la CSS dietro
  * al WebGL (`GlobeSky`). Costa zero per frame e non tocca la scena 3D.

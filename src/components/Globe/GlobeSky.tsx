@@ -67,7 +67,7 @@ function GlobeSkyComponent() {
       </svg>
 
       {/* Alone: il globo sembra illuminato da qualcosa, non incollato sul nero. */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_48%,rgba(56,189,248,0.14),rgba(12,20,38,0.35)_38%,transparent_68%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_48%,rgba(56,189,248,0.18),rgba(14,40,72,0.4)_36%,transparent_70%)]" />
     </div>
   )
 }
