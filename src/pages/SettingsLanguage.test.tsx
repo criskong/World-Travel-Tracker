@@ -3,6 +3,7 @@ import 'fake-indexeddb/auto'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Settings from './Settings'
+import { captureInstallPrompt, resetInstallPromptForTests } from '../hooks/useInstallPrompt'
 import Countries from './Countries'
 import { MemoryRouter } from 'react-router-dom'
 import { useTravelStore } from '../store/travelStore'
@@ -183,6 +184,25 @@ describe('installazione', () => {
     fireEvent(window, event)
     return flag
   }
+
+  beforeEach(() => {
+    resetInstallPromptForTests()
+  })
+
+  /**
+   * IL caso reale: il browser lancia l'evento mentre l'utente e sulla Home,
+   * Impostazioni si apre dopo. Il bottone deve esserci comunque — e c'e solo
+   * se `main.tsx` si e messo in ascolto all'avvio (`captureInstallPrompt`).
+   */
+  it("prende l'offerta anche se arriva PRIMA di aprire Impostazioni", async () => {
+    captureInstallPrompt()
+    const flag = fireInstallPrompt()
+
+    render(<Settings />)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Install' }))
+    await waitFor(() => expect(flag.prompted).toBe(true))
+  })
 
   it('senza offerta del browser spiega di usare il menu', () => {
     render(<Settings />)

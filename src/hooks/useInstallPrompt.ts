@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState, useSyncExternalStore } from 'react'
 
 /**
  * Installazione della PWA.
@@ -63,29 +63,77 @@ function isIosNonSafari(): boolean {
   return isIos() && /CriOS|FxiOS|EdgiOS|OPiOS/i.test(navigator.userAgent)
 }
 
+/*
+ * L'evento va catturato ALL'AVVIO, non quando si apre Impostazioni.
+ *
+ * Il browser lancia `beforeinstallprompt` una volta sola, poco dopo il
+ * caricamento, mentre l'utente e ancora sulla Home. Un ascoltatore registrato
+ * al montaggio della pagina Impostazioni arriva dopo che l'evento e passato:
+ * il bottone non compariva alla prima apertura e compariva solo ricaricando
+ * la pagina da dentro Impostazioni. Per questo lo stato vive fuori da React,
+ * a livello di modulo, e `captureInstallPrompt()` si chiama da `main.tsx`.
+ */
+let deferredEvent: BeforeInstallPromptEvent | null = null
+let installedFlag = false
+let listening = false
+const subscribers = new Set<() => void>()
+
+function notify(): void {
+  for (const subscriber of subscribers) subscriber()
+}
+
+/** Idempotente: mette in ascolto una volta sola, il prima possibile. */
+export function captureInstallPrompt(): void {
+  if (listening || typeof window === 'undefined') return
+  listening = true
+
+  window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt)
+  window.addEventListener('appinstalled', onAppInstalled)
+}
+
+function onBeforeInstallPrompt(event: Event): void {
+  // Senza questo alcuni browser mostrano la loro barra e l'evento sparisce.
+  event.preventDefault()
+  deferredEvent = event as BeforeInstallPromptEvent
+  notify()
+}
+
+function onAppInstalled(): void {
+  installedFlag = true
+  deferredEvent = null
+  notify()
+}
+
+/** Solo per i test: riporta il modulo allo stato di primo avvio, ascolto compreso. */
+export function resetInstallPromptForTests(): void {
+  deferredEvent = null
+  installedFlag = false
+  if (listening) {
+    window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt)
+    window.removeEventListener('appinstalled', onAppInstalled)
+    listening = false
+  }
+}
+
+function subscribe(callback: () => void): () => void {
+  subscribers.add(callback)
+  return () => {
+    subscribers.delete(callback)
+  }
+}
+
 export function useInstallPrompt(): InstallPrompt {
-  const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null)
-  const [installed, setInstalled] = useState(() => isStandalone())
+  // Se nessuno l'ha chiamata prima (i test, o un uso fuori da main.tsx) si
+  // parte ad ascoltare da qui: tardi, ma meglio di niente.
+  captureInstallPrompt()
+
+  const deferred = useSyncExternalStore(subscribe, () => deferredEvent, () => null)
+  const installed = useSyncExternalStore(
+    subscribe,
+    () => installedFlag || isStandalone(),
+    () => false,
+  )
   const [busy, setBusy] = useState(false)
-
-  useEffect(() => {
-    const onBeforeInstall = (event: Event) => {
-      // Senza questo alcuni browser mostrano la loro barra e l'evento sparisce.
-      event.preventDefault()
-      setDeferred(event as BeforeInstallPromptEvent)
-    }
-    const onInstalled = () => {
-      setInstalled(true)
-      setDeferred(null)
-    }
-
-    window.addEventListener('beforeinstallprompt', onBeforeInstall)
-    window.addEventListener('appinstalled', onInstalled)
-    return () => {
-      window.removeEventListener('beforeinstallprompt', onBeforeInstall)
-      window.removeEventListener('appinstalled', onInstalled)
-    }
-  }, [])
 
   const install = useCallback(async () => {
     if (!deferred || busy) return
@@ -98,7 +146,8 @@ export function useInstallPrompt(): InstallPrompt {
       // niente da dire, il bottone resta li.
     } finally {
       // L'evento e monouso: dopo il prompt non vale piu, comunque sia andata.
-      setDeferred(null)
+      deferredEvent = null
+      notify()
       setBusy(false)
     }
   }, [busy, deferred])
