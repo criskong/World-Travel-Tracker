@@ -73,14 +73,19 @@ export function AddVisitForm({ countryCode, onDone, onCancel }: AddVisitFormProp
    * quella e si tengono le altre, invece di far ricominciare da capo.
    */
   const handleFiles = useCallback((chosen: FileList | null) => {
+    // Copia PRIMA di azzerare il campo: `input.files` e una FileList viva,
+    // e svuotare `value` la vuota — leggerla dopo significa non trovare
+    // nessun file. Il campo si azzera perche scegliere di nuovo la stessa
+    // foto deve rilanciare `change`.
+    const files = chosen ? Array.from(chosen) : []
     if (fileInputRef.current) fileInputRef.current.value = ''
-    if (!chosen || chosen.length === 0) return
+    if (files.length === 0) return
 
     setPhotos((current) => {
       let error: LocalizedMessage | null = null
       const accepted = [...current]
 
-      for (const file of chosen) {
+      for (const file of files) {
         if (accepted.length >= MAX_PHOTOS_PER_VISIT) {
           error = { key: 'photo.tooMany', vars: { max: MAX_PHOTOS_PER_VISIT } }
           break

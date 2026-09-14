@@ -215,7 +215,7 @@ export const it: Record<keyof typeof en, string> = {
   'settings.install.button': 'Installa',
   'settings.install.installed': 'Già installata — la stai usando proprio adesso.',
   'settings.install.unavailable':
-    'Il browser non ha ancora proposto l’installazione. Ricarica la pagina dopo averla visitata una volta, oppure usa il menu del browser.',
+    'Il browser non ha proposto l’installazione qui. Su Chrome ed Edge puoi installarla dal menu ⋮ — «Installa World Travel Tracker» — oppure dall’icona a destra nella barra dell’indirizzo.',
   'settings.install.iosTitle': 'Su iPhone e iPad, Safari chiede di farlo a mano:',
   'settings.install.ios1': 'Tocca il pulsante Condividi in fondo a Safari.',
   'settings.install.ios2': 'Scorri in basso e scegli «Aggiungi a Home».',

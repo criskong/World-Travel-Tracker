@@ -23,9 +23,26 @@ function fileOfSize(bytes: number, type = 'image/jpeg'): File {
   return file
 }
 
+/**
+ * Simula la scelta di un file come fa il browser, non come fa comodo al test:
+ * `input.files` e una FileList VIVA, legata al campo, e azzerare `input.value`
+ * la vuota. Un doppio con un array fisso qui ha gia nascosto un bug in cui il
+ * form svuotava il campo prima di leggere i file, e non ne caricava nessuno.
+ */
 function selectFile(file: File) {
   const input = document.getElementById('visit-photo') as HTMLInputElement
-  Object.defineProperty(input, 'files', { value: [file], configurable: true })
+  // Lo STESSO oggetto, svuotato sul posto: e cosi che si comporta la FileList.
+  const selected: File[] = [file]
+  Object.defineProperty(input, 'files', { get: () => selected, configurable: true })
+  const proto = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!
+  Object.defineProperty(input, 'value', {
+    configurable: true,
+    get: () => proto.get!.call(input) as string,
+    set: (next: string) => {
+      if (next === '') selected.length = 0
+      proto.set!.call(input, next)
+    },
+  })
   fireEvent.change(input)
 }
 

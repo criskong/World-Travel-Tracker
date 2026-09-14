@@ -212,7 +212,7 @@ export const en = {
   'settings.install.button': 'Install',
   'settings.install.installed': 'Already installed — you are using the app right now.',
   'settings.install.unavailable':
-    'Your browser has not offered installation yet. Reload the page after visiting once, or use your browser menu.',
+    'Your browser has not offered installation here. On Chrome and Edge you can install from the ⋮ menu — "Install World Travel Tracker" — or from the icon at the right end of the address bar.',
   'settings.install.iosTitle': 'On iPhone and iPad, Safari asks you to do it by hand:',
   'settings.install.ios1': 'Tap the Share button at the bottom of Safari.',
   'settings.install.ios2': 'Scroll down and choose "Add to Home Screen".',
