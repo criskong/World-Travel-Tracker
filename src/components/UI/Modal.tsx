@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslation } from '../../i18n/useTranslation'
 import type { ReactNode } from 'react'
 
@@ -25,6 +26,10 @@ const FOCUSABLE =
  * Lo sfondo è un velo tinto, NON sfocato: su Home la modal si apre sopra il
  * canvas WebGL, e un `backdrop-blur` a schermo intero lì costa un'intera
  * ricomposizione per frame su mobile (CLAUDE.md, sezione Design).
+ *
+ * Va in un portal su `body`: chi la apre sta spesso dentro pannelli con
+ * `transform` o `backdrop-filter`, che fanno da contenitore per un `fixed`.
+ * Senza portal la modal si aprirebbe dentro il pannello, ritagliata.
  */
 export function Modal({ title, onClose, children }: ModalProps) {
   const { t } = useTranslation()
@@ -71,7 +76,7 @@ export function Modal({ title, onClose, children }: ModalProps) {
     }
   }, [onClose])
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">
       <button
         type="button"
@@ -91,6 +96,7 @@ export function Modal({ title, onClose, children }: ModalProps) {
       >
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

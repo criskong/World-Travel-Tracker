@@ -551,6 +551,29 @@ che si salvava solo perche `inset-y-3` gli dava un'altezza definita.
 Android: senza, la tastiera copre il fondo del drawer invece di accorciare il
 viewport.
 
+### Modifica dei viaggi e foto a tutto schermo (dopo la fase 6)
+
+**Lo stesso form per aggiungere e per modificare.** `AddVisitForm` prende un
+`visit` opzionale e, se c'e, parte dai suoi dati e salva con `updateVisit`.
+Un viaggio non ha due modi diversi di essere valido a seconda di quando lo si
+tocca, e due form sarebbero due posti dove tenere allineate le stesse regole.
+I campi hanno id da `useId()`: il form di aggiunta e quello di modifica di una
+card possono essere aperti insieme.
+
+**Togliere una foto in modifica non cancella niente finche non si salva.**
+Il form tiene la lista degli id da conservare; `updateVisit` salva prima le
+foto nuove, poi il viaggio, e solo alla fine elimina le foto tolte — a meta
+strada il viaggio referenzia sempre foto esistenti. Un id che il viaggio non
+aveva viene ignorato: dallo store non si puo "adottare" la foto di un altro.
+
+**Modal e Lightbox vanno in un portal su `body`.** Chi le apre sta dentro
+pannelli con `transform` (l'animazione di ingresso, che con `fill-mode: both`
+lascia il transform applicato) o `backdrop-filter`: entrambi fanno da
+contenitore per un `position: fixed`, e senza portal l'overlay si aprirebbe
+DENTRO il pannello, ritagliato. La Lightbox ascolta la tastiera in fase di
+cattura e ferma la propagazione: sotto c'e CountryDetails che chiude su Esc,
+e un solo tasto chiuderebbe foto e pannello insieme.
+
 ### Archiviazione non disponibile (decisa in fase 2)
 
 Quando IndexedDB non è utilizzabile (Safari in navigazione privata) l'app non

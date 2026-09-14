@@ -127,6 +127,13 @@ export const it: Record<keyof typeof en, string> = {
   'visit.saving': 'Salvataggio…',
   'visit.remove': 'Elimina questo viaggio',
   'visit.photoAlt': 'Foto di questo viaggio',
+  'visit.edit': 'Modifica questo viaggio',
+  'visit.update': 'Salva le modifiche',
+  'visit.openPhoto': 'Apri la foto {position}',
+  'lightbox.close': 'Chiudi la foto',
+  'lightbox.prev': 'Foto precedente',
+  'lightbox.next': 'Foto successiva',
+  'lightbox.counter': '{current} di {total}',
 
   // --- Conferma rimozione -------------------------------------------------
   'remove.title': 'Togliere {country} dai visitati?',

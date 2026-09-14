@@ -125,6 +125,13 @@ export const en = {
   'visit.saving': 'Saving…',
   'visit.remove': 'Delete this trip',
   'visit.photoAlt': 'Photo from this trip',
+  'visit.edit': 'Edit this trip',
+  'visit.update': 'Save changes',
+  'visit.openPhoto': 'Open photo {position}',
+  'lightbox.close': 'Close photo',
+  'lightbox.prev': 'Previous photo',
+  'lightbox.next': 'Next photo',
+  'lightbox.counter': '{current} of {total}',
 
   // --- Conferma rimozione -------------------------------------------------
   'remove.title': 'Remove {country} from visited?',

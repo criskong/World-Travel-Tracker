@@ -30,7 +30,7 @@ function fileOfSize(bytes: number, type = 'image/jpeg'): File {
  * form svuotava il campo prima di leggere i file, e non ne caricava nessuno.
  */
 function selectFile(file: File) {
-  const input = document.getElementById('visit-photo') as HTMLInputElement
+  const input = document.querySelector<HTMLInputElement>('input[type="file"]')!
   // Lo STESSO oggetto, svuotato sul posto: e cosi che si comporta la FileList.
   const selected: File[] = [file]
   Object.defineProperty(input, 'files', { get: () => selected, configurable: true })

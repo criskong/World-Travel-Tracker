@@ -1,8 +1,9 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useId, useMemo, useRef, useState } from 'react'
 import { ImagePlus, X } from 'lucide-react'
 import { COUNTRIES } from '../../data/countries/countries'
 import { useTravelStore } from '../../store/travelStore'
 import { useObjectUrls } from '../../hooks/useObjectUrl'
+import { usePhotos } from '../../hooks/usePhotos'
 import { flagEmoji } from '../../utils/flag'
 import {
   MAX_PHOTOS_PER_VISIT,
@@ -12,10 +13,18 @@ import {
 } from '../../utils/photoValidation'
 import { useTranslation } from '../../i18n/useTranslation'
 import type { LocalizedMessage } from '../../i18n/message'
+import type { Visit } from '../../types'
 
 interface AddVisitFormProps {
   /** Paese preselezionato. Resta modificabile: il campo fa parte del form. */
   countryCode: string
+  /**
+   * Se c'e, il form MODIFICA questo viaggio invece di crearne uno: parte dai
+   * suoi dati, mostra le sue foto (che si possono togliere) e salva con
+   * `updateVisit`. Stesso form, stesse regole: un viaggio non ha due modi
+   * diversi di essere valido a seconda di quando lo si tocca.
+   */
+  visit?: Visit
   onDone: () => void
   onCancel: () => void
 }
@@ -34,24 +43,36 @@ const FIELD_CLASS =
 const LABEL_CLASS = 'text-xs font-medium text-muted'
 
 /**
- * Form di aggiunta viaggio.
+ * Form di aggiunta — e di modifica — di un viaggio.
  *
  * Solo la data è obbligatoria: un viaggio ricordato a metà è comunque un
  * viaggio, e costringere a inserire città e note farebbe perdere dati.
  * La foto viene validata PRIMA di arrivare a IndexedDB.
  */
-export function AddVisitForm({ countryCode, onDone, onCancel }: AddVisitFormProps) {
+export function AddVisitForm({ countryCode, visit, onDone, onCancel }: AddVisitFormProps) {
   const { t, country: countryLabel, compare } = useTranslation()
   const addVisit = useTravelStore((state) => state.addVisit)
+  const updateVisit = useTravelStore((state) => state.updateVisit)
 
-  const [code, setCode] = useState(countryCode)
-  const [date, setDate] = useState(today())
-  const [city, setCity] = useState('')
-  const [note, setNote] = useState('')
+  const [code, setCode] = useState(visit?.countryCode ?? countryCode)
+  const [date, setDate] = useState(visit?.date ?? today())
+  const [city, setCity] = useState(visit?.city ?? '')
+  const [note, setNote] = useState(visit?.note ?? '')
   const [photos, setPhotos] = useState<File[]>([])
+
+  // In modifica: le foto gia salvate, con gli id che si e scelto di tenere.
+  // Toglierne una qui non cancella niente finche non si salva.
+  const existing = usePhotos(visit?.photoIds)
+  const [keptIds, setKeptIds] = useState<string[]>(() => visit?.photoIds ?? [])
+  const keptPhotos = existing.items.filter((item) => keptIds.includes(item.id))
+  const photoCount = keptIds.length + photos.length
   const [photoError, setPhotoError] = useState<LocalizedMessage | null>(null)
   const [saving, setSaving] = useState(false)
 
+  // Id unici: il form di aggiunta e quello di modifica di una card possono
+  // essere aperti insieme, e due `htmlFor` uguali manderebbero il click al
+  // campo sbagliato.
+  const idBase = useId()
   const fileInputRef = useRef<HTMLInputElement>(null)
   // Le anteprime revocano i propri object URL quando la lista cambia e allo
   // smontaggio: senza, ogni foto scelta resterebbe in memoria.
@@ -86,7 +107,7 @@ export function AddVisitForm({ countryCode, onDone, onCancel }: AddVisitFormProp
       const accepted = [...current]
 
       for (const file of files) {
-        if (accepted.length >= MAX_PHOTOS_PER_VISIT) {
+        if (keptIds.length + accepted.length >= MAX_PHOTOS_PER_VISIT) {
           error = { key: 'photo.tooMany', vars: { max: MAX_PHOTOS_PER_VISIT } }
           break
         }
@@ -101,6 +122,11 @@ export function AddVisitForm({ countryCode, onDone, onCancel }: AddVisitFormProp
       setPhotoError(error)
       return accepted
     })
+  }, [keptIds.length])
+
+  const removeKeptPhoto = useCallback((id: string) => {
+    setKeptIds((current) => current.filter((keptId) => keptId !== id))
+    setPhotoError(null)
   }, [])
 
   const removePhoto = useCallback((index: number) => {
@@ -114,31 +140,33 @@ export function AddVisitForm({ countryCode, onDone, onCancel }: AddVisitFormProp
       if (saving) return
       setSaving(true)
 
-      const created = await addVisit(
-        {
-          countryCode: code,
-          date,
-          ...(city.trim() ? { city: city.trim() } : {}),
-          ...(note.trim() ? { note: note.trim() } : {}),
-        },
-        photos.length > 0 ? photos : undefined,
-      )
+      const fields = {
+        countryCode: code,
+        date,
+        ...(city.trim() ? { city: city.trim() } : {}),
+        ...(note.trim() ? { note: note.trim() } : {}),
+      }
+      const newPhotos = photos.length > 0 ? photos : undefined
+
+      const saved = visit
+        ? await updateVisit(visit.id, { ...fields, photoIds: keptIds }, newPhotos)
+        : await addVisit(fields, newPhotos)
 
       setSaving(false)
-      if (created) onDone()
+      if (saved) onDone()
     },
-    [addVisit, city, code, date, note, photos, saving],
+    [addVisit, city, code, date, keptIds, note, photos, saving, updateVisit, visit],
   )
 
   return (
     <form onSubmit={handleSubmit} className="animate-fade-up rounded-xl border border-edge bg-surface p-3.5">
       <div className="flex flex-col gap-3">
         <div>
-          <label htmlFor="visit-country" className={LABEL_CLASS}>
+          <label htmlFor={`${idBase}-country`} className={LABEL_CLASS}>
             {t('visit.country')}
           </label>
           <select
-            id="visit-country"
+            id={`${idBase}-country`}
             value={code}
             onChange={(event) => setCode(event.target.value)}
             className={`${FIELD_CLASS} mt-1`}
@@ -152,11 +180,11 @@ export function AddVisitForm({ countryCode, onDone, onCancel }: AddVisitFormProp
         </div>
 
         <div>
-          <label htmlFor="visit-date" className={LABEL_CLASS}>
+          <label htmlFor={`${idBase}-date`} className={LABEL_CLASS}>
             {t('visit.date')} <span className="text-accent">*</span>
           </label>
           <input
-            id="visit-date"
+            id={`${idBase}-date`}
             type="date"
             required
             value={date}
@@ -167,11 +195,11 @@ export function AddVisitForm({ countryCode, onDone, onCancel }: AddVisitFormProp
         </div>
 
         <div>
-          <label htmlFor="visit-city" className={LABEL_CLASS}>
+          <label htmlFor={`${idBase}-city`} className={LABEL_CLASS}>
             {t('visit.city')} <span className="text-subtle">{t('common.optional')}</span>
           </label>
           <input
-            id="visit-city"
+            id={`${idBase}-city`}
             type="text"
             value={city}
             maxLength={120}
@@ -182,11 +210,11 @@ export function AddVisitForm({ countryCode, onDone, onCancel }: AddVisitFormProp
         </div>
 
         <div>
-          <label htmlFor="visit-note" className={LABEL_CLASS}>
+          <label htmlFor={`${idBase}-note`} className={LABEL_CLASS}>
             {t('visit.note')} <span className="text-subtle">{t('common.optional')}</span>
           </label>
           <textarea
-            id="visit-note"
+            id={`${idBase}-note`}
             rows={2}
             value={note}
             maxLength={2000}
@@ -207,15 +235,28 @@ export function AddVisitForm({ countryCode, onDone, onCancel }: AddVisitFormProp
             </span>
           </span>
 
-          {previewUrls.length > 0 && (
+          {(keptPhotos.length > 0 || previewUrls.length > 0) && (
             <ul className="mt-1.5 grid grid-cols-3 gap-1.5 sm:grid-cols-4">
+              {keptPhotos.map((photo, index) => (
+                <li key={photo.id} className="relative overflow-hidden rounded-lg border border-edge">
+                  <img src={photo.url} alt="" className="h-20 w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => removeKeptPhoto(photo.id)}
+                    aria-label={t('visit.removePhotoAt', { position: index + 1 })}
+                    className="absolute right-1 top-1 rounded-md bg-black/70 p-1 text-slate-300 transition-colors hover:text-white"
+                  >
+                    <X size={12} aria-hidden />
+                  </button>
+                </li>
+              ))}
               {previewUrls.map((url, index) => (
                 <li key={url} className="relative overflow-hidden rounded-lg border border-edge">
                   <img src={url} alt="" className="h-20 w-full object-cover" />
                   <button
                     type="button"
                     onClick={() => removePhoto(index)}
-                    aria-label={t('visit.removePhotoAt', { position: index + 1 })}
+                    aria-label={t('visit.removePhotoAt', { position: keptPhotos.length + index + 1 })}
                     className="absolute right-1 top-1 rounded-md bg-black/70 p-1 text-slate-300 transition-colors hover:text-white"
                   >
                     <X size={12} aria-hidden />
@@ -225,19 +266,19 @@ export function AddVisitForm({ countryCode, onDone, onCancel }: AddVisitFormProp
             </ul>
           )}
 
-          {photos.length < MAX_PHOTOS_PER_VISIT && (
+          {photoCount < MAX_PHOTOS_PER_VISIT && (
             <label
-              htmlFor="visit-photo"
+              htmlFor={`${idBase}-photo`}
               className="mt-1.5 flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-edge-strong px-3 py-2.5 text-sm text-muted transition-colors hover:border-accent/40 hover:text-slate-400"
             >
               <ImagePlus size={16} aria-hidden />
-              {photos.length === 0 ? t('visit.choose') : t('visit.chooseMore')}
+              {photoCount === 0 ? t('visit.choose') : t('visit.chooseMore')}
             </label>
           )}
 
           <input
             ref={fileInputRef}
-            id="visit-photo"
+            id={`${idBase}-photo`}
             type="file"
             accept="image/*"
             multiple
@@ -266,7 +307,7 @@ export function AddVisitForm({ countryCode, onDone, onCancel }: AddVisitFormProp
           disabled={saving}
           className="flex-1 rounded-xl bg-accent px-3 py-2 text-sm font-semibold text-base-900 transition-all hover:bg-accent-soft hover:shadow-glow disabled:opacity-60"
         >
-          {saving ? t('visit.saving') : t('visit.save')}
+          {saving ? t('visit.saving') : visit ? t('visit.update') : t('visit.save')}
         </button>
       </div>
     </form>

@@ -1,19 +1,42 @@
 import { useState } from 'react'
-import { CalendarDays, ImageOff, MapPin, Trash2 } from 'lucide-react'
+import { CalendarDays, ImageOff, MapPin, Pencil, Trash2 } from 'lucide-react'
 import { usePhotos } from '../../hooks/usePhotos'
 import { useTranslation } from '../../i18n/useTranslation'
+import { Lightbox } from '../UI/Lightbox'
+import { AddVisitForm } from './AddVisitForm'
 import type { Visit } from '../../types'
 
 interface VisitCardProps {
   visit: Visit
   onRemove?: (id: string) => void
+  /** Se `false` la card e di sola lettura: niente matita. */
+  editable?: boolean
 }
 
-/** Una riga della lista dei viaggi, con foto se presente. */
-export function VisitCard({ visit, onRemove }: VisitCardProps) {
+/**
+ * Una riga della lista dei viaggi, con le foto se ci sono.
+ * La matita apre lo stesso form dell'aggiunta, al posto della card; una foto
+ * cliccata si apre a tutto schermo.
+ */
+export function VisitCard({ visit, onRemove, editable = true }: VisitCardProps) {
   const { t, date } = useTranslation()
   const { urls, status, missing } = usePhotos(visit.photoIds)
   const [confirming, setConfirming] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [openPhoto, setOpenPhoto] = useState<number | null>(null)
+
+  if (editing) {
+    return (
+      <li>
+        <AddVisitForm
+          countryCode={visit.countryCode}
+          visit={visit}
+          onDone={() => setEditing(false)}
+          onCancel={() => setEditing(false)}
+        />
+      </li>
+    )
+  }
 
   return (
     <li className="rounded-xl border border-edge bg-surface p-3">
@@ -50,14 +73,26 @@ export function VisitCard({ visit, onRemove }: VisitCardProps) {
               </button>
             </span>
           ) : (
-            <button
-              type="button"
-              onClick={() => setConfirming(true)}
-              aria-label={t('visit.remove')}
-              className="shrink-0 rounded-lg p-1.5 text-subtle transition-colors hover:bg-surface-raised hover:text-red-300"
-            >
-              <Trash2 size={14} aria-hidden />
-            </button>
+            <span className="flex shrink-0 items-center">
+              {editable && (
+                <button
+                  type="button"
+                  onClick={() => setEditing(true)}
+                  aria-label={t('visit.edit')}
+                  className="rounded-lg p-1.5 text-subtle transition-colors hover:bg-surface-raised hover:text-slate-200"
+                >
+                  <Pencil size={14} aria-hidden />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setConfirming(true)}
+                aria-label={t('visit.remove')}
+                className="rounded-lg p-1.5 text-subtle transition-colors hover:bg-surface-raised hover:text-red-300"
+              >
+                <Trash2 size={14} aria-hidden />
+              </button>
+            </span>
           ))}
       </div>
 
@@ -71,14 +106,21 @@ export function VisitCard({ visit, onRemove }: VisitCardProps) {
         <div className="mt-2.5">
           {urls.length > 0 && (
             <ul className={urls.length === 1 ? '' : 'grid grid-cols-3 gap-1.5'}>
-              {urls.map((url) => (
+              {urls.map((url, index) => (
                 <li key={url} className="overflow-hidden rounded-lg border border-edge">
-                  <img
-                    src={url}
-                    alt=""
-                    loading="lazy"
-                    className={urls.length === 1 ? 'h-36 w-full object-cover' : 'h-20 w-full object-cover'}
-                  />
+                  <button
+                    type="button"
+                    onClick={() => setOpenPhoto(index)}
+                    aria-label={t('visit.openPhoto', { position: index + 1 })}
+                    className="block w-full cursor-zoom-in transition-opacity hover:opacity-90"
+                  >
+                    <img
+                      src={url}
+                      alt=""
+                      loading="lazy"
+                      className={urls.length === 1 ? 'h-36 w-full object-cover' : 'h-20 w-full object-cover'}
+                    />
+                  </button>
                 </li>
               ))}
             </ul>
@@ -100,6 +142,10 @@ export function VisitCard({ visit, onRemove }: VisitCardProps) {
             <p className="text-xs text-subtle">{t('visit.photoLoading')}</p>
           )}
         </div>
+      )}
+
+      {openPhoto !== null && (
+        <Lightbox urls={urls} index={openPhoto} onClose={() => setOpenPhoto(null)} />
       )}
     </li>
   )

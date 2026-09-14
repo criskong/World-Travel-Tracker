@@ -37,6 +37,13 @@ export type StorageStatus = 'unknown' | 'available' | 'unavailable'
 /** Dati di un nuovo viaggio: l'id lo genera lo store. */
 export type NewVisit = Omit<Visit, 'id'> & { id?: string }
 
+/**
+ * Cosa si puo cambiare di un viaggio esistente. `photoIds` sono le foto GIA
+ * salvate da tenere: quelle che mancano rispetto a prima vengono eliminate.
+ * Le foto nuove viaggiano a parte, come Blob, in `updateVisit`.
+ */
+export type VisitChanges = Omit<Visit, 'id'>
+
 export interface ImportOutcome {
   ok: boolean
   errors: StoreMessage[]
@@ -65,6 +72,11 @@ export interface TravelStore extends TravelData {
   forgetCountry: (code: string) => Promise<void>
   /** Le `photos` vengono salvate come Blob e collegate via `photoIds`. */
   addVisit: (input: NewVisit, photos?: readonly Blob[]) => Promise<Visit | null>
+  /**
+   * Modifica un viaggio. Le foto nuove si salvano prima, quelle tolte si
+   * eliminano dopo: a meta strada il viaggio referenzia solo foto esistenti.
+   */
+  updateVisit: (id: string, changes: VisitChanges, photos?: readonly Blob[]) => Promise<Visit | null>
   removeVisit: (id: string) => Promise<void>
   /** `photos` arriva dallo ZIP di backup: id -> Blob. */
   importData: (raw: unknown, photos?: ReadonlyMap<string, Blob>) => Promise<ImportOutcome>
@@ -286,6 +298,60 @@ export const useTravelStore = create<TravelStore>((set, get) => {
       set({ visits: [visit, ...previous], lastError: null })
 
       if ((await persist(() => saveVisit(visit))) === 'failed') {
+        set({ visits: previous })
+        return null
+      }
+      return visit
+    },
+
+    updateVisit: async (id, changes, photos) => {
+      const previous = get().visits
+      const existing = previous.find((item) => item.id === id)
+      if (!existing) return null
+
+      const countryCode = normalizeCode(changes.countryCode)
+      if (!isKnownCountryCode(countryCode)) {
+        set({ lastError: { key: 'storage.unknownCountry', vars: { code: countryCode } } })
+        return null
+      }
+      if (!isValidVisitDate(changes.date)) {
+        set({ lastError: { key: 'storage.invalidDate' } })
+        return null
+      }
+
+      // Si tengono solo foto che il viaggio aveva davvero: un id inventato
+      // dall'esterno non puo entrare da qui.
+      const before = existing.photoIds ?? []
+      let photoIds = (changes.photoIds ?? []).filter((photoId) => before.includes(photoId))
+
+      const incoming = photos ?? []
+      if (incoming.length > 0) {
+        try {
+          const saved = await Promise.all(incoming.map((photo) => savePhoto(photo)))
+          photoIds = [...photoIds, ...saved]
+        } catch (error) {
+          if (error instanceof StorageUnavailableError) {
+            set({ storage: 'unavailable', storageMessage: STORAGE_UNAVAILABLE_MESSAGE })
+          } else {
+            set({ lastError: { key: 'storage.photoFailed' } })
+            return null
+          }
+        }
+      }
+
+      const visit: Visit = { ...changes, id, countryCode }
+      if (photoIds.length === 0) delete visit.photoIds
+      else visit.photoIds = photoIds
+
+      set({ visits: previous.map((item) => (item.id === id ? visit : item)), lastError: null })
+
+      const dropped = before.some((photoId) => !photoIds.includes(photoId))
+      const outcome = await persist(async () => {
+        await saveVisit(visit)
+        // Le foto tolte non devono restare a occupare quota.
+        if (dropped) await removeOrphanPhotos()
+      })
+      if (outcome === 'failed') {
         set({ visits: previous })
         return null
       }
