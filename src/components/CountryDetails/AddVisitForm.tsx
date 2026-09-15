@@ -5,12 +5,8 @@ import { useTravelStore } from '../../store/travelStore'
 import { useObjectUrls } from '../../hooks/useObjectUrl'
 import { usePhotos } from '../../hooks/usePhotos'
 import { flagEmoji } from '../../utils/flag'
-import {
-  MAX_PHOTOS_PER_VISIT,
-  MAX_PHOTO_BYTES,
-  formatBytes,
-  validatePhoto,
-} from '../../utils/photoValidation'
+import { MAX_PHOTOS_PER_VISIT, validatePhoto } from '../../utils/photoValidation'
+import { PhotoDecodeError, preparePhoto } from '../../utils/photoProcessing'
 import { useTranslation } from '../../i18n/useTranslation'
 import type { LocalizedMessage } from '../../i18n/message'
 import type { Visit } from '../../types'
@@ -58,7 +54,9 @@ export function AddVisitForm({ countryCode, visit, onDone, onCancel }: AddVisitF
   const [date, setDate] = useState(visit?.date ?? today())
   const [city, setCity] = useState(visit?.city ?? '')
   const [note, setNote] = useState(visit?.note ?? '')
-  const [photos, setPhotos] = useState<File[]>([])
+  const [photos, setPhotos] = useState<Blob[]>([])
+  /** Quante foto stanno ancora passando per il canvas. */
+  const [preparing, setPreparing] = useState(0)
 
   // In modifica: le foto gia salvate, con gli id che si e scelto di tenere.
   // Toglierne una qui non cancella niente finche non si salva.
@@ -89,25 +87,25 @@ export function AddVisitForm({ countryCode, visit, onDone, onCancel }: AddVisitF
   )
 
   /**
-   * Aggiunge i file scelti a quelli gia presenti.
-   * Le foto valide entrano comunque: se una sola e troppo grande, si segnala
-   * quella e si tengono le altre, invece di far ricominciare da capo.
+   * Aggiunge i file scelti a quelli gia presenti, dopo averli ridotti.
+   * Le foto valide entrano comunque: se una sola e troppo grande o illeggibile,
+   * si segnala quella e si tengono le altre, invece di far ricominciare da capo.
    */
-  const handleFiles = useCallback((chosen: FileList | null) => {
-    // Copia PRIMA di azzerare il campo: `input.files` e una FileList viva,
-    // e svuotare `value` la vuota — leggerla dopo significa non trovare
-    // nessun file. Il campo si azzera perche scegliere di nuovo la stessa
-    // foto deve rilanciare `change`.
-    const files = chosen ? Array.from(chosen) : []
-    if (fileInputRef.current) fileInputRef.current.value = ''
-    if (files.length === 0) return
+  const handleFiles = useCallback(
+    async (chosen: FileList | null) => {
+      // Copia PRIMA di azzerare il campo: `input.files` e una FileList viva,
+      // e svuotare `value` la vuota — leggerla dopo significa non trovare
+      // nessun file. Il campo si azzera perche scegliere di nuovo la stessa
+      // foto deve rilanciare `change`.
+      const files = chosen ? Array.from(chosen) : []
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      if (files.length === 0) return
 
-    setPhotos((current) => {
       let error: LocalizedMessage | null = null
-      const accepted = [...current]
-
+      const room = MAX_PHOTOS_PER_VISIT - keptIds.length - photos.length
+      const candidates: File[] = []
       for (const file of files) {
-        if (keptIds.length + accepted.length >= MAX_PHOTOS_PER_VISIT) {
+        if (candidates.length >= room) {
           error = { key: 'photo.tooMany', vars: { max: MAX_PHOTOS_PER_VISIT } }
           break
         }
@@ -116,13 +114,29 @@ export function AddVisitForm({ countryCode, visit, onDone, onCancel }: AddVisitF
           error = validation.error
           continue
         }
-        accepted.push(file)
+        candidates.push(file)
       }
 
+      // Decodifica e riduzione: e qui che un HEIC su Chrome viene rifiutato,
+      // dal browser e non da una lista nostra.
+      setPreparing((count) => count + candidates.length)
+      const prepared: Blob[] = []
+      for (const file of candidates) {
+        try {
+          prepared.push(await preparePhoto(file))
+        } catch (cause) {
+          if (!(cause instanceof PhotoDecodeError)) throw cause
+          error = { key: 'photo.unsupported', vars: { type: file.type || '?' } }
+        } finally {
+          setPreparing((count) => count - 1)
+        }
+      }
+
+      setPhotos((current) => [...current, ...prepared])
       setPhotoError(error)
-      return accepted
-    })
-  }, [keptIds.length])
+    },
+    [keptIds.length, photos.length],
+  )
 
   const removeKeptPhoto = useCallback((id: string) => {
     setKeptIds((current) => current.filter((keptId) => keptId !== id))
@@ -227,12 +241,7 @@ export function AddVisitForm({ countryCode, visit, onDone, onCancel }: AddVisitF
         <div>
           <span className={LABEL_CLASS}>
             {t('visit.photo')}{' '}
-            <span className="text-subtle">
-              {t('visit.photoLimit', {
-                max: MAX_PHOTOS_PER_VISIT,
-                size: formatBytes(MAX_PHOTO_BYTES),
-              })}
-            </span>
+            <span className="text-subtle">{t('visit.photoLimit', { max: MAX_PHOTOS_PER_VISIT })}</span>
           </span>
 
           {(keptPhotos.length > 0 || previewUrls.length > 0) && (
@@ -283,8 +292,14 @@ export function AddVisitForm({ countryCode, visit, onDone, onCancel }: AddVisitF
             accept="image/*"
             multiple
             className="sr-only"
-            onChange={(event) => handleFiles(event.target.files)}
+            onChange={(event) => void handleFiles(event.target.files)}
           />
+
+          {preparing > 0 && (
+            <p className="mt-1.5 text-xs text-subtle" aria-live="polite">
+              {t('photo.processing')}
+            </p>
+          )}
 
           {photoError !== null && (
             <p role="alert" className="mt-1.5 text-xs leading-relaxed text-red-300">
@@ -304,7 +319,7 @@ export function AddVisitForm({ countryCode, visit, onDone, onCancel }: AddVisitF
         </button>
         <button
           type="submit"
-          disabled={saving}
+          disabled={saving || preparing > 0}
           className="flex-1 rounded-xl bg-accent px-3 py-2 text-sm font-semibold text-base-900 transition-all hover:bg-accent-soft hover:shadow-glow disabled:opacity-60"
         >
           {saving ? t('visit.saving') : visit ? t('visit.update') : t('visit.save')}

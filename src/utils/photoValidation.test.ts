@@ -13,8 +13,14 @@ describe('validatePhoto', () => {
     expect(result.error.key).toBe('photo.notImage')
   })
 
-  it('rifiuta i formati immagine non supportati', () => {
-    expect(validatePhoto({ type: 'image/tiff', size: 1000 }).ok).toBe(false)
+  /**
+   * Un `image/*` sconosciuto NON si rifiuta qui: l'iPhone scatta in HEIC, e
+   * decidere per lista significava dirgli di no. A rifiutare ci pensa il
+   * browser in decodifica (`photoProcessing.ts`), se davvero non lo legge.
+   */
+  it('lascia passare un formato immagine sconosciuto, che verra decodificato dal browser', () => {
+    expect(validatePhoto({ type: 'image/heic', size: 1000 }).ok).toBe(true)
+    expect(validatePhoto({ type: 'image/tiff', size: 1000 }).ok).toBe(true)
   })
 
   it('rifiuta una foto oltre il limite, dicendo quanto pesa e qual è il limite', () => {
@@ -25,7 +31,7 @@ describe('validatePhoto', () => {
     // porta con se la dimensione vera e il limite, e la frase la compone la
     // traduzione.
     expect(result.error.key).toBe('photo.tooLarge')
-    expect(result.error.vars).toEqual({ size: '5.0 MB', limit: '5.0 MB' })
+    expect(result.error.vars).toEqual({ size: '25.0 MB', limit: '25.0 MB' })
   })
 
   it('accetta esattamente il limite', () => {

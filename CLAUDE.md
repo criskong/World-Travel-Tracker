@@ -574,6 +574,36 @@ DENTRO il pannello, ritagliato. La Lightbox ascolta la tastiera in fase di
 cattura e ferma la propagazione: sotto c'e CountryDetails che chiude su Esc,
 e un solo tasto chiuderebbe foto e pannello insieme.
 
+### Foto: ridotte nel browser, non rifiutate per lista (dopo la fase 6)
+
+Su iPhone non si riusciva a salvare nessuna foto. Due cause insieme: l'iPhone
+scatta in **HEIC**, che non era nella lista dei formati accettati, e anche
+convertite in JPEG le sue foto sfondano spesso i 5 MB. Allargare la lista o
+alzare il limite avrebbe curato il sintomo.
+
+Ora ogni foto passa da `photoProcessing.ts`: il browser la **decodifica**
+(HEIC compreso, su iOS), la riduce a un lato massimo di 2048 px e la
+ricodifica JPEG a 0,85. Misurato in Chrome: un JPEG da 2,4 MB a 4000x3000
+diventa 480 KB a 2048x1536. Conseguenze:
+
+- `validatePhoto` non ha piu una lista chiusa di formati: qualunque `image/*`
+  passa e a rifiutare ci pensa il browser in decodifica — HEIC su Chrome da
+  `photo.unsupported`, con il tipo nel messaggio.
+- Il limite di 25 MB e sul file di PARTENZA: serve solo a non decodificare
+  un TIFF gigante su un telefono. Il file salvato pesa qualche centinaio di KB.
+- Le GIF non si ricodificano (si congelerebbero). Un JPEG gia piccolo e
+  sotto i 2048 px si tiene com'e: ricodificarlo perderebbe qualita per niente.
+- In jsdom non c'e canvas: `preparePhoto` restituisce il file com'e. I test
+  unitari quindi non verificano la riduzione; l'ha verificata Chrome headless
+  leggendo i Blob da IndexedDB.
+
+### Su iOS l'app installata e Safari hanno archivi separati
+
+Non e un bug nostro e non si puo aggirare: WebKit da a una web app sulla Home
+un'origine di archiviazione distinta da quella di Safari. Chi segna Paesi in
+Safari e poi apre l'icona li trova "spariti". Impostazioni lo dice nella card
+di installazione su iOS, e la via per spostare i dati e il backup.
+
 ### Archiviazione non disponibile (decisa in fase 2)
 
 Quando IndexedDB non è utilizzabile (Safari in navigazione privata) l'app non

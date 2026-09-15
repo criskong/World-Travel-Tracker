@@ -115,7 +115,7 @@ export const it: Record<keyof typeof en, string> = {
   'visit.photo': 'Foto',
   'visit.addPhoto': 'Aggiungi una foto',
   'visit.removePhoto': 'Rimuovi la foto',
-  'visit.photoLimit': '(facoltative, fino a {max}, max {size} l’una)',
+  'visit.photoLimit': '(facoltative, fino a {max})',
   'visit.photoNotFound': 'Foto non trovata',
   'visit.photosMissing#one': '1 foto non e piu su questo dispositivo',
   'visit.photosMissing#other': '{count} foto non sono piu su questo dispositivo',
@@ -227,6 +227,8 @@ export const it: Record<keyof typeof en, string> = {
   'settings.install.ios1': 'Tocca il pulsante Condividi in fondo a Safari.',
   'settings.install.ios2': 'Scorri in basso e scegli «Aggiungi a Home».',
   'settings.install.ios3': 'Tocca «Aggiungi» in alto a destra.',
+  'settings.install.iosSeparateStorage':
+    'Attenzione: su iPhone l’app installata e Safari hanno archivi SEPARATI. I Paesi e i viaggi salvati in uno non compaiono nell’altro — per spostarli, esporta un backup da una parte e importalo dall’altra.',
   'settings.install.iosNote':
     'Funziona solo con Safari: Chrome e Firefox su iOS non possono installare le web app.',
 
@@ -328,9 +330,10 @@ export const it: Record<keyof typeof en, string> = {
   'validation.skippedTrips#other': '{count} viaggi saltati: dati incompleti o non validi.',
 
   // --- Validazione della foto ----------------------------------------------
-  'photo.notImage': 'Quel file non è un’immagine. Scegli un JPEG, PNG, WebP, GIF o AVIF.',
+  'photo.notImage': 'Quel file non è un’immagine.',
   'photo.tooLarge': 'Quella foto pesa {size}, oltre il limite di {limit}. Scegline una più piccola.',
-  'photo.unsupported': '{type} non è supportato. Usa JPEG, PNG, WebP, GIF o AVIF.',
+  'photo.unsupported': 'Questo browser non riesce a leggere quella foto ({type}). Prova con un JPEG o PNG.',
+  'photo.processing': 'Preparazione delle foto…',
   'photo.tooMany': 'Un viaggio può avere al massimo {max} foto.',
   'photo.empty': 'Quel file è vuoto.',
 }

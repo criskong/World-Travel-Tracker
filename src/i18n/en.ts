@@ -113,7 +113,7 @@ export const en = {
   'visit.photo': 'Photo',
   'visit.addPhoto': 'Add a photo',
   'visit.removePhoto': 'Remove photo',
-  'visit.photoLimit': '(optional, up to {max}, max {size} each)',
+  'visit.photoLimit': '(optional, up to {max})',
   'visit.photoNotFound': 'Photo not found',
   'visit.photosMissing#one': '1 photo is missing from this device',
   'visit.photosMissing#other': '{count} photos are missing from this device',
@@ -224,6 +224,8 @@ export const en = {
   'settings.install.ios1': 'Tap the Share button at the bottom of Safari.',
   'settings.install.ios2': 'Scroll down and choose "Add to Home Screen".',
   'settings.install.ios3': 'Tap "Add" at the top right.',
+  'settings.install.iosSeparateStorage':
+    'Heads up: on iPhone the installed app and Safari keep SEPARATE data. Countries and trips saved in one do not appear in the other — export a backup here and import it there to move them.',
   'settings.install.iosNote':
     'It only works in Safari: Chrome and Firefox on iOS cannot install web apps.',
 
@@ -319,9 +321,10 @@ export const en = {
   'validation.skippedTrips#other': '{count} trips were skipped: incomplete or invalid data.',
 
   // --- Validazione della foto ----------------------------------------------
-  'photo.notImage': 'That file is not an image. Pick a JPEG, PNG, WebP, GIF or AVIF.',
+  'photo.notImage': 'That file is not an image.',
   'photo.tooLarge': 'That photo is {size}, over the {limit} limit. Pick a smaller one.',
-  'photo.unsupported': '{type} is not supported. Use JPEG, PNG, WebP, GIF or AVIF.',
+  'photo.unsupported': 'This browser cannot read that photo ({type}). Try a JPEG or PNG.',
+  'photo.processing': 'Preparing photos…',
   'photo.tooMany': 'A trip can have at most {max} photos.',
   'photo.empty': 'That file is empty.',
 } as const

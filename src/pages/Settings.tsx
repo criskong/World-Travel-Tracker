@@ -297,6 +297,12 @@ function InstallSection() {
           {iosNeedsSafari && (
             <p className="mt-2 text-amber-200/90">{t('settings.install.iosNote')}</p>
           )}
+          {/*
+            Su iOS l'app installata e Safari NON condividono l'archivio: chi
+            segna dieci Paesi in Safari e poi apre l'icona sulla Home li trova
+            spariti, e pensa a un bug. Va detto qui, prima che succeda.
+          */}
+          <p className="mt-2 text-amber-200/90">{t('settings.install.iosSeparateStorage')}</p>
         </Notice>
       )}
 
