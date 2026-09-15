@@ -38,8 +38,6 @@ export const COLOR_VISITED = 'rgba(74, 240, 176, 0.95)'
  */
 export const COLOR_SIDE = 'rgba(64, 47, 31, 0.85)'
 export const COLOR_SIDE_VISITED = 'rgba(52, 211, 153, 0.55)'
-/** I nomi dei Paesi: inchiostro scuro sulla sabbia, come su una cartina. */
-export const COLOR_LABEL = 'rgba(28, 20, 12, 0.88)'
 /** I confini: scuri e caldi, per staccare due Paesi vicini senza urlare. */
 export const COLOR_STROKE = 'rgba(38, 27, 18, 0.55)'
 

@@ -8,7 +8,6 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import { useTravelStore } from '../../store/travelStore'
 import { closeDatabase } from '../../services/storage/db'
 import type { CountryPolygon } from '../../data/countries/geoData'
-import type { GlobeLabel } from './labelAnchors'
 import { GEOJSON_FILENAME } from '../../data/countries/dataset'
 
 /**
@@ -55,38 +54,7 @@ const PLAIN_PROPS = new Set([
   'atmosphereAltitude',
   'polygonsData',
   'polygonsTransitionDuration',
-  'labelsData',
-  'labelIncludeDot',
-  'labelResolution',
-  'labelsTransitionDuration',
 ])
-
-/**
- * Le etichette hanno i loro accessor, applicati agli oggetti di `labelsData`
- * e non ai poligoni. Stesse regole: funzioni, mai stringhe.
- */
-const LABEL_ACCESSOR_CONTRACTS: Record<string, (value: unknown, label: GlobeLabel) => void> = {
-  labelLat: (value, label) => {
-    expect(typeof value).toBe('number')
-    expect(Math.abs(value as number), `${label.iso}: latitudine ${String(value)}`).toBeLessThanOrEqual(90)
-  },
-  labelLng: (value, label) => {
-    expect(typeof value).toBe('number')
-    expect(Math.abs(value as number), `${label.iso}: longitudine ${String(value)}`).toBeLessThanOrEqual(180)
-  },
-  labelText: (value, label) => {
-    expect(typeof value).toBe('string')
-    expect((value as string).length, `${label.iso}: testo vuoto`).toBeGreaterThan(0)
-    // La font di three-globe non ha accenti: il testo deve gia esserne privo.
-    expect(value as string).toBe((value as string).normalize('NFD').replace(/[\u0300-\u036f]/g, ''))
-  },
-  labelSize: (value) => {
-    expect(Number.isFinite(Number(value))).toBe(true)
-    expect(Number(value)).toBeGreaterThan(0)
-  },
-  labelColor: (value, label) => expectColor(value, label.iso),
-  labelAltitude: (value) => expect(Number(value)).toBeGreaterThan(0),
-}
 
 const CSS_COLOR = /^(#[0-9a-f]{3,8}|rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*(,\s*[\d.]+\s*)?\))$/i
 
@@ -248,11 +216,7 @@ describe('contratto con react-globe.gl', () => {
     const { props } = await mountGlobe()
 
     const uncovered = Object.keys(props).filter(
-      (name) =>
-        !PLAIN_PROPS.has(name) &&
-        !(name in ACCESSOR_CONTRACTS) &&
-        !(name in LABEL_ACCESSOR_CONTRACTS) &&
-        !['onLabelClick', 'onLabelHover'].includes(name),
+      (name) => !PLAIN_PROPS.has(name) && !(name in ACCESSOR_CONTRACTS),
     )
 
     expect(
@@ -301,26 +265,6 @@ describe('contratto con react-globe.gl', () => {
       }
     })
   }
-
-  it('le etichette: alcuni nomi alla vista iniziale, ognuno valido, e cliccarne uno apre il Paese', async () => {
-    const { props, selected } = await mountGlobe()
-    const labels = props.labelsData as GlobeLabel[]
-
-    // Alla vista di default ci stanno i Paesi grandi, non tutti e 195.
-    expect(labels.length).toBeGreaterThan(5)
-    expect(labels.length).toBeLessThan(80)
-    expect(labels.map((label) => label.iso)).toContain('RU')
-    expect(labels.map((label) => label.iso)).not.toContain('MC')
-
-    for (const [name, check] of Object.entries(LABEL_ACCESSOR_CONTRACTS)) {
-      expect(props, `<Globe> non riceve la prop ${name}`).toHaveProperty(name)
-      for (const label of labels) check(accessorFn(props[name])(label), label)
-    }
-
-    const onLabelClick = props.onLabelClick as (l: object) => void
-    onLabelClick(labels.find((label) => label.iso === 'RU')!)
-    expect(selected).toEqual(['RU'])
-  })
 
   it('il click su una feature non risolvibile non cambia nulla', async () => {
     const { props, polygons, selected } = await mountGlobe()

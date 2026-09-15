@@ -524,41 +524,6 @@ dei quali tocca il costo per frame in modo sensibile.
   sistema chiede animazioni ridotte. E gia in pausa quando Home non si vede,
   come il resto del ciclo di rendering.
 
-### I nomi dei Paesi sul globo compaiono con lo zoom (dopo la fase 6)
-
-Richiesta: i nomi scritti sui Paesi "come su una cartina". Su un globo largo
-350 px i 195 nomi insieme sarebbero una nuvola di lettere, con quelli delle
-isole in mezzo al mare: una cartina vera li mostra man mano che ci si
-avvicina, e qui si fa lo stesso. Logica pura in `labelAnchors.ts`, test a
-parte; `GlobeView` passa il risultato al layer `labelsData` di three-globe.
-
-- **Un ancoraggio per Paese**, sul baricentro dell'anello piu grande della
-  feature piu grande — la Francia si scrive sull'Esagono, non sulla Guyana.
-  La larghezza utile e il bbox est-ovest per il coseno della latitudine per
-  0,8 (gli anelli non sono rettangoli); un anello che scavalca l'antimeridiano
-  viene "srotolato" prima, o Fiji risulterebbe larga 359 gradi.
-- **Il nome si scrive solo se ci sta dentro il Paese.** L'altezza del testo in
-  gradi d'arco si ricava dall'altitudine della camera perche sullo schermo
-  misuri ~11 px (`labelSizeDeg`); la larghezza stimata e `caratteri x altezza
-  x 0,62 x 1,15`. Alla vista di default ci stanno i grandi (Russia, Brasile,
-  Mali...), avvicinandosi arrivano gli altri.
-- **L'altitudine e quantizzata a terzi di ottava** (`quantizeAltitude`) e
-  letta con 120 ms di ritardo dall'evento `change` dei controlli: ogni cambio
-  di misura ricostruisce la geometria di TUTTE le scritte, e durante uno zoom
-  continuo deve succedere qualche volta, non a ogni frame.
-- **La font incorporata in three-globe ha 136 glifi e nessun accento**:
-  `labelText` toglie i diacritici ("Peru", "Citta del Vaticano", "Faer Oer").
-  Sulle cartine internazionali e l'uso, e un glifo mancante lascerebbe un buco.
-- **Le scritte intercettano il puntatore**: cliccarne una apre il Paese come
-  cliccare il poligono (`onLabelClick`), e in hover evidenzia lo stesso.
-- Gli accessor delle etichette hanno il loro contratto in
-  `globeAccessors.test.tsx` (`LABEL_ACCESSOR_CONTRACTS`), applicato agli
-  oggetti di `labelsData` e non ai poligoni.
-
-Verificato in Chrome headless (SwiftShader) con screenshot alla vista di
-default e dopo lo zoom. Il costo su telefono della ricostruzione delle scritte
-allo zoom NON e misurato: lo collauda l'utente.
-
 ### Pannelli a tutta altezza: `max-height` non basta (dopo la fase 6)
 
 Il drawer dei dettagli su mobile mostrava il contenuto tagliato in fondo e non

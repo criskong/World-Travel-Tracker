@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import Globe from 'react-globe.gl'
 import type { GlobeMethods } from 'react-globe.gl'
 import { Color, MeshPhongMaterial } from 'three'
@@ -12,15 +12,7 @@ import { useVisitedTransitions } from '../../hooks/useVisitedTransitions'
 import { useTravelStore } from '../../store/travelStore'
 import { useTranslation } from '../../i18n/useTranslation'
 import {
-  buildLabelAnchors,
-  labelSizeDeg,
-  quantizeAltitude,
-  selectLabels,
-} from './labelAnchors'
-import type { GlobeLabel } from './labelAnchors'
-import {
   COLOR_BACKGROUND,
-  COLOR_LABEL,
   COLOR_GLOBE,
   COLOR_STROKE,
   polygonAltitude,
@@ -69,7 +61,7 @@ let mountCount = 0
  * sottoscrizione interna: si aggiornano senza toccare la scena.
  */
 function GlobeViewComponent({ onSelectCountry, selectedIso }: GlobeViewProps) {
-  const { t, country: countryLabel } = useTranslation()
+  const { t } = useTranslation()
   const containerRef = useRef<HTMLDivElement>(null)
   const globeRef = useRef<GlobeMethods | undefined>(undefined)
   const { width, height } = useElementSize(containerRef)
@@ -122,55 +114,6 @@ function GlobeViewComponent({ onSelectCountry, selectedIso }: GlobeViewProps) {
 
   const [geo, setGeo] = useState<GeoState>({ status: 'loading' })
   const [hovered, setHovered] = useState<CountryPolygon | null>(null)
-
-  /**
-   * I nomi dei Paesi, come su una cartina: compaiono man mano che ci si
-   * avvicina, solo dove il nome ci sta dentro il Paese. Dipendono dallo zoom,
-   * che si legge dai controlli della camera; l'altitudine e quantizzata
-   * perche ogni cambio di misura ricostruisce la geometria di tutte le
-   * scritte, e durante uno zoom continuo deve succedere poche volte.
-   */
-  const [cameraAltitude, setCameraAltitude] = useState(() => quantizeAltitude(2.5))
-  useEffect(() => {
-    const globe = globeRef.current
-    const controls = globe?.controls() as
-      | { addEventListener: (type: string, fn: () => void) => void; removeEventListener: (type: string, fn: () => void) => void }
-      | undefined
-    if (!globe || !controls) return
-    let timer: ReturnType<typeof setTimeout> | undefined
-    const onChange = () => {
-      if (timer !== undefined) clearTimeout(timer)
-      timer = setTimeout(() => {
-        const next = quantizeAltitude(globe.pointOfView().altitude)
-        setCameraAltitude((current) => (current === next ? current : next))
-      }, 120)
-    }
-    controls.addEventListener('change', onChange)
-    return () => {
-      controls.removeEventListener('change', onChange)
-      if (timer !== undefined) clearTimeout(timer)
-    }
-  }, [stableSize])
-
-  const anchors = useMemo(
-    () => (geo.status === 'ready' ? buildLabelAnchors(geo.polygons) : []),
-    [geo],
-  )
-  const textSizeDeg = useMemo(
-    () => labelSizeDeg(cameraAltitude, stableSize.height),
-    [cameraAltitude, stableSize.height],
-  )
-  const labels = useMemo(
-    () => selectLabels(anchors, countryLabel, textSizeDeg),
-    [anchors, countryLabel, textSizeDeg],
-  )
-  const labelLat = useCallback((item: object) => (item as GlobeLabel).lat, [])
-  const labelLng = useCallback((item: object) => (item as GlobeLabel).lng, [])
-  const labelTextOf = useCallback((item: object) => (item as GlobeLabel).text, [])
-  const labelSize = useCallback(() => textSizeDeg, [textSizeDeg])
-  const labelColor = useCallback(() => COLOR_LABEL, [])
-  // Sopra i poligoni, anche quelli in rilievo e in hover.
-  const labelAltitude = useCallback(() => 0.04, [])
 
   const visited = useVisitedCodes()
   // I Paesi che hanno appena cambiato stato sfumano invece di scattare.
@@ -319,25 +262,6 @@ function GlobeViewComponent({ onSelectCountry, selectedIso }: GlobeViewProps) {
     [onSelectCountry],
   )
 
-  // Un nome sta sopra il suo Paese e ne intercetta il puntatore: cliccarlo
-  // deve fare la stessa cosa che cliccare il Paese.
-  const handleLabelClick = useCallback(
-    (item: object) => onSelectCountry((item as GlobeLabel).iso),
-    [onSelectCountry],
-  )
-  const handleLabelHover = useCallback(
-    (item: object | null) => {
-      if (item === null) {
-        setHovered(null)
-        return
-      }
-      const { iso } = item as GlobeLabel
-      const polygon = geo.status === 'ready' ? geo.polygons.find((p) => p.iso === iso) : undefined
-      setHovered(polygon ?? null)
-    },
-    [geo],
-  )
-
   const showPointerCursor = useCallback(
     (_objType: string, objData: object) => (objData as CountryPolygon)?.iso !== null,
     [],
@@ -378,18 +302,6 @@ function GlobeViewComponent({ onSelectCountry, selectedIso }: GlobeViewProps) {
             onPolygonHover={handleHover}
             onPolygonClick={handleClick}
             showPointerCursor={showPointerCursor}
-            labelsData={labels}
-            labelLat={labelLat}
-            labelLng={labelLng}
-            labelText={labelTextOf}
-            labelSize={labelSize}
-            labelColor={labelColor}
-            labelAltitude={labelAltitude}
-            labelIncludeDot={false}
-            labelResolution={2}
-            labelsTransitionDuration={0}
-            onLabelClick={handleLabelClick}
-            onLabelHover={handleLabelHover}
           />
         )}
       </div>
