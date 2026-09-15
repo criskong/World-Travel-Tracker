@@ -1,10 +1,11 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   AlertTriangle,
   Check,
   CheckCircle2,
   Download,
   HardDrive,
+  RefreshCw,
   Images,
   Languages,
   Share,
@@ -14,7 +15,10 @@ import {
 } from 'lucide-react'
 import { Modal } from '../components/UI/Modal'
 import { useTravelStore } from '../store/travelStore'
-import { useInstallPrompt } from '../hooks/useInstallPrompt'
+import { isIosDevice, useInstallPrompt } from '../hooks/useInstallPrompt'
+import { inspectStorage } from '../services/storage'
+import type { StorageHealth } from '../services/storage'
+import { formatBytes } from '../utils/photoValidation'
 import { BACKUP_FILENAME, buildBackupZip, downloadBackup, readBackupFile } from '../utils/backupFile'
 import { parseTravelDataJson } from '../utils/travelDataSchema'
 import { useTranslation } from '../i18n/useTranslation'
@@ -105,7 +109,11 @@ export default function Settings() {
         onReset={resetData}
       />
 
-      <StorageSection storage={storage} message={storageMessage} />
+      <StorageSection
+        storage={storage}
+        message={storageMessage}
+        inMemory={{ countries: manuallyMarked.length, trips: visits.length, photos: photoCount }}
+      />
     </div>
   )
 }
@@ -655,14 +663,55 @@ function ResetSection({
   )
 }
 
+/**
+ * Diagnostica dell'archiviazione, letta dal disco.
+ *
+ * E la risposta a "dove sono finiti i miei dati": su che sito si e, se il
+ * browser promette di tenerli, quanto spazio si usa e quante righe ci sono
+ * DAVVERO in IndexedDB — confrontate con quelle sullo schermo, perche una
+ * scrittura fallita in silenzio si vede solo cosi.
+ */
 function StorageSection({
   storage,
   message,
+  inMemory,
 }: {
   storage: 'unknown' | 'available' | 'unavailable'
   message: LocalizedMessage | null
+  inMemory: { countries: number; trips: number; photos: number }
 }) {
   const { t } = useTranslation()
+  const [health, setHealth] = useState<StorageHealth | null>(null)
+  const [tick, setTick] = useState(0)
+
+  useEffect(() => {
+    let cancelled = false
+    void inspectStorage().then((result) => {
+      if (!cancelled) setHealth(result)
+    })
+    return () => {
+      cancelled = true
+    }
+    // `tick` e `inMemory`: si rilegge quando l'utente lo chiede o quando i dati
+    // sullo schermo cambiano, cosi il confronto e sempre attuale.
+  }, [tick, inMemory.countries, inMemory.trips, inMemory.photos])
+
+  const onDisk = health?.onDisk ?? null
+  const mismatch =
+    onDisk !== null &&
+    storage !== 'unavailable' &&
+    (onDisk.countries !== inMemory.countries ||
+      onDisk.trips !== inMemory.trips ||
+      onDisk.photos < inMemory.photos)
+
+  const persistence =
+    health === null
+      ? ''
+      : health.persisted === null
+        ? t('settings.storage.persistence.unsupported')
+        : health.persisted
+          ? t('settings.storage.persistence.yes')
+          : t('settings.storage.persistence.no')
 
   return (
     <SectionCard
@@ -677,6 +726,61 @@ function StorageSection({
       ) : (
         <p className="mt-3 text-xs text-subtle">{t('settings.storage.ok')}</p>
       )}
+
+      {health !== null && (
+        <dl className="mt-4 grid grid-cols-1 gap-x-6 gap-y-3 text-xs sm:grid-cols-[auto_1fr]">
+          <dt className="text-muted">{t('settings.storage.host')}</dt>
+          <dd className="min-w-0">
+            <span className="break-all font-mono text-slate-300">{health.host || '—'}</span>
+            <span className="mt-0.5 block text-subtle">{t('settings.storage.hostHint')}</span>
+          </dd>
+
+          <dt className="text-muted">{t('settings.storage.persistence')}</dt>
+          <dd className="text-slate-300">{persistence}</dd>
+
+          {health.usageBytes !== null && health.quotaBytes !== null && (
+            <>
+              <dt className="text-muted">{t('settings.storage.space')}</dt>
+              <dd className="tabular-nums text-slate-300">
+                {t('settings.storage.spaceValue', {
+                  used: formatBytes(health.usageBytes),
+                  quota: formatBytes(health.quotaBytes),
+                })}
+              </dd>
+            </>
+          )}
+
+          <dt className="text-muted">{t('settings.storage.onDisk')}</dt>
+          <dd className="tabular-nums text-slate-300">
+            {onDisk === null
+              ? t('settings.storage.onDiskUnknown')
+              : t('settings.storage.onDiskValue', {
+                  countries: t('common.country#', { count: onDisk.countries }),
+                  trips: t('common.trip#', { count: onDisk.trips }),
+                  photos: t('common.photo#', { count: onDisk.photos }),
+                })}
+          </dd>
+        </dl>
+      )}
+
+      {mismatch && (
+        <div className="mt-3">
+          <Notice tone="warning">{t('settings.storage.mismatch')}</Notice>
+        </div>
+      )}
+
+      {isIosDevice() && (
+        <div className="mt-3">
+          <Notice tone="neutral">{t('settings.storage.safari')}</Notice>
+        </div>
+      )}
+
+      <div className="mt-4">
+        <ActionButton onClick={() => setTick((value) => value + 1)}>
+          <RefreshCw size={15} aria-hidden />
+          {t('settings.storage.refresh')}
+        </ActionButton>
+      </div>
     </SectionCard>
   )
 }

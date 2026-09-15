@@ -524,6 +524,24 @@ dei quali tocca il costo per frame in modo sensibile.
   sistema chiede animazioni ridotte. E gia in pausa quando Home non si vede,
   come il resto del ciclo di rendering.
 
+### Niente nomi dei Paesi sul globo (provato e tolto)
+
+E stato implementato — nomi che comparivano con lo zoom solo dove ci stavano
+dentro il Paese, in `labelsData` di three-globe — visto sul telefono e tolto
+il giorno dopo su richiesta: non convinceva. Il commit `fb7832c` e il suo
+revert restano nella storia se servisse riprenderlo. Non riproporlo.
+
+### Diagnostica dell'archiviazione in Impostazioni (dopo la fase 6)
+
+Dopo una segnalazione di dati spariti da un giorno all'altro su Safari iOS,
+la card "Dove vivono i tuoi dati" legge **dal disco**, non dallo store: host
+della pagina (un link di anteprima Vercel e un archivio diverso), se il
+browser ha promesso persistenza (`navigator.storage.persisted`, che Safari
+non ha), spazio usato, e quante righe ci sono davvero in IndexedDB in quel
+momento. Se schermo e disco non coincidono compare un avviso: una scrittura
+fallita in silenzio si vede solo cosi. Su iOS ricorda che Safari cancella i
+dati dei siti non aperti per 7 giorni e che l'app installata ne e esente.
+
 ### Pannelli a tutta altezza: `max-height` non basta (dopo la fase 6)
 
 Il drawer dei dettagli su mobile mostrava il contenuto tagliato in fondo e non

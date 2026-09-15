@@ -287,6 +287,22 @@ export const it: Record<keyof typeof en, string> = {
     'Tutto è salvato in questo browser, su questo dispositivo. Nessun account, nessun server, nessuna sincronizzazione — il che vuol dire anche che nessun altro può recuperarli al posto tuo.',
   'settings.storage.ok':
     'L’archiviazione locale funziona. Cancellare i dati del browser, o disinstallare l’app, cancella tutto — un file di backup è l’unica copia che sopravvive.',
+  'settings.storage.host': 'Sito',
+  'settings.storage.hostHint': 'Ogni indirizzo tiene i suoi dati: un link di anteprima e il sito principale sono due archivi diversi.',
+  'settings.storage.persistence': 'Protetti dalle pulizie',
+  'settings.storage.persistence.yes': 'Sì — il browser ha promesso di tenere questi dati.',
+  'settings.storage.persistence.no': 'No — il browser può cancellarli se lo spazio scarseggia.',
+  'settings.storage.persistence.unsupported': 'Questo browser non lo prevede.',
+  'settings.storage.space': 'Spazio usato',
+  'settings.storage.spaceValue': '{used} su {quota}',
+  'settings.storage.onDisk': 'Salvati su questo dispositivo adesso',
+  'settings.storage.onDiskValue': '{countries}, {trips}, {photos}',
+  'settings.storage.onDiskUnknown': 'Non è stato possibile leggere il database.',
+  'settings.storage.mismatch':
+    'Quello che vedi sullo schermo non è ancora tutto su disco. Se non si sistema in pochi secondi, esporta un backup prima di chiudere l’app.',
+  'settings.storage.safari':
+    'Safari su iPhone cancella i dati di un sito dopo 7 giorni senza aprirlo, e può cancellarli quando lo spazio scarseggia. L’app installata sulla schermata Home è esente dalla regola dei 7 giorni. Un file di backup è l’unica copia che sopravvive sempre.',
+  'settings.storage.refresh': 'Ricontrolla',
   'settings.storage.unavailable': 'L’archiviazione locale non è disponibile in questo browser.',
 
   // --- Aggiornamento ------------------------------------------------------

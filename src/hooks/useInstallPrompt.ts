@@ -49,6 +49,11 @@ function isStandalone(): boolean {
   return iosStandalone || window.matchMedia?.('(display-mode: standalone)').matches === true
 }
 
+/** iPhone e iPad. Serve anche a Impostazioni, per gli avvisi che valgono solo li. */
+export function isIosDevice(): boolean {
+  return isIos()
+}
+
 function isIos(): boolean {
   if (typeof navigator === 'undefined') return false
   const ua = navigator.userAgent

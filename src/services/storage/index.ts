@@ -35,6 +35,8 @@ export {
 } from './photos'
 
 export { requestPersistentStorage } from './persistence'
+export { inspectStorage } from './health'
+export type { StorageHealth } from './health'
 export type { PersistenceResult } from './persistence'
 
 export {

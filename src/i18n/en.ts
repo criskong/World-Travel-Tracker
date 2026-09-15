@@ -282,6 +282,22 @@ export const en = {
   'settings.storage.ok':
     'Local storage is working. Clearing your browser data, or uninstalling the app, deletes everything — a backup file is the only copy that survives.',
   'settings.storage.unavailable': 'Local storage is unavailable in this browser.',
+  'settings.storage.host': 'Site',
+  'settings.storage.hostHint': 'Each address keeps its own data: a preview link and the main site are two different stores.',
+  'settings.storage.persistence': 'Protected from cleanup',
+  'settings.storage.persistence.yes': 'Yes — the browser promised to keep this data.',
+  'settings.storage.persistence.no': 'No — the browser may clear it when space runs low.',
+  'settings.storage.persistence.unsupported': 'Not offered by this browser.',
+  'settings.storage.space': 'Space used',
+  'settings.storage.spaceValue': '{used} of {quota}',
+  'settings.storage.onDisk': 'Saved on this device right now',
+  'settings.storage.onDiskValue': '{countries}, {trips}, {photos}',
+  'settings.storage.onDiskUnknown': 'Could not read the database.',
+  'settings.storage.mismatch':
+    'What you see on screen is not all on disk yet. If this does not settle in a few seconds, export a backup before closing the app.',
+  'settings.storage.safari':
+    'Safari on iPhone deletes a site’s data after 7 days without opening it, and may clear it when the device runs low on space. The app installed on the Home Screen is exempt from the 7-day rule. A backup file is the only copy that always survives.',
+  'settings.storage.refresh': 'Check again',
 
   // --- Aggiornamento ------------------------------------------------------
   'update.title': 'A new version is ready',
