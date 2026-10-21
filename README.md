@@ -1,5 +1,7 @@
 # World Travel Tracker
 
+[![CI](https://github.com/criskong/World-Travel-Tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/criskong/World-Travel-Tracker/actions/workflows/ci.yml)
+
 **See where you've been. Discover where you'll go next.**
 
 App personale per tracciare i Paesi visitati su un mappamondo 3D interattivo.
