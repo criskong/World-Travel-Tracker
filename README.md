@@ -98,7 +98,7 @@ environment variables. `vercel.json` adds the SPA rewrite to `index.html` and
 ```
 src/
   components/         UI, one folder per area (Globe, CountryDetails, …)
-  pages/              one lazy-loaded route each
+  pages/              one per route, code-split (the globe is lazy-loaded too)
   store/              Zustand store + derived selectors
   services/storage/   the only code allowed to talk to IndexedDB
   data/countries/     country list, ISO resolver, geometry simplification
