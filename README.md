@@ -6,6 +6,8 @@
 
 **See where you've been. Discover where you'll go next.**
 
+**Live:** [world-travel-tracker-two.vercel.app](https://world-travel-tracker-two.vercel.app/)
+
 A personal app to track the countries you've visited on an interactive 3D
 globe. No account, no server, no network calls at runtime: everything lives
 in the browser, on the user's device. Installable as a PWA and fully usable
