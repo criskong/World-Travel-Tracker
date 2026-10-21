@@ -87,6 +87,17 @@ describe('translate', () => {
       expect(translate(language, 'common.trip#', { count })).toBe(expected)
     })
 
+    // In italiano il sostantivo si accorda con il primo numero, non col totale:
+    // "1 Paesi su 1" e finito sugli screenshot prima di diventare un test.
+    it.each([
+      [0, '0 Paesi su 1'],
+      [1, '1 Paese su 1'],
+      [3, '3 Paesi su 10'],
+    ] as const)('progresso di un traguardo con %i', (count, expected) => {
+      const target = count === 3 ? 10 : 1
+      expect(translate('it', 'achievement.detail.countries#', { count, target })).toBe(expected)
+    })
+
     it('senza count si comporta come il plurale', () => {
       expect(translate('en', 'common.trip#')).toBe('0 trips')
     })

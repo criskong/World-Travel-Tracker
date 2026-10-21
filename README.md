@@ -32,7 +32,7 @@ offline after the first load.
   that any archive tool can open.
 - **Bilingual (EN/IT) without an i18n library**: a missing translation is a
   compile error, not English text in an Italian page.
-- **588 tests**, run on every push by [GitHub Actions](.github/workflows/ci.yml).
+- **590+ tests**, run on every push by [GitHub Actions](.github/workflows/ci.yml).
 
 ---
 
@@ -222,7 +222,7 @@ are counted separately and don't advance achievements, so "50 / 195" and
 
 - `tsc` in strict mode and the production build must pass clean; CI runs
   both plus the tests on every push.
-- 588 Vitest tests on pure logic and components: statistics, achievements,
+- 590+ Vitest tests on pure logic and components: statistics, achievements,
   import validation, ISO resolution, geometry simplification, caching, modal
   accessibility, colour-contrast ratios.
 - WebGL doesn't exist in jsdom, so globe tests use a test double. To cover

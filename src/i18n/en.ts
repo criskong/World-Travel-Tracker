@@ -72,7 +72,8 @@ export const en = {
   'stats.empty.body':
     'Spin the globe and tap a country to open its details. Mark it as visited from there, and your numbers will show up here.',
   'stats.empty.footer': '0 / 195 countries · 0% of the world',
-  'stats.continentBar': '{continent}: {visited} of {total} countries, {percentage}%',
+  'stats.continentBar#one': '{continent}: {count} of {total} countries, {percentage}%',
+  'stats.continentBar#other': '{continent}: {count} of {total} countries, {percentage}%',
 
   // --- Viaggi recenti -----------------------------------------------------
   'recent.title': 'Recent trips',
@@ -154,7 +155,8 @@ export const en = {
   // --- Statistiche --------------------------------------------------------
   'statistics.title': 'Statistics',
   'statistics.subtitleEmpty': 'Numbers will appear here as soon as you mark your first country.',
-  'statistics.subtitle': '{visited} of {total} countries · {percentage}% of the world',
+  'statistics.subtitle#one': '{count} of {total} countries · {percentage}% of the world',
+  'statistics.subtitle#other': '{count} of {total} countries · {percentage}% of the world',
   'statistics.totals': 'Totals',
   'statistics.tripsRecorded': 'Trips recorded',
   'statistics.acrossCountries': 'across {countries}',
@@ -201,7 +203,8 @@ export const en = {
   'achievement.continent-master.description': 'Visit every country of a single continent',
   'achievement.world-explorer.name': 'World Explorer',
   'achievement.world-explorer.description': 'Visit every country in the world',
-  'achievement.detail.countries': '{current} of {target} countries',
+  'achievement.detail.countries#one': '{count} of {target} visited',
+  'achievement.detail.countries#other': '{count} of {target} visited',
   'achievement.detail.continentProgress': '{current} of {total} in {continent}',
   'achievement.detail.continentDone': '{continents} completed',
 
@@ -231,7 +234,7 @@ export const en = {
 
   'settings.export.title': 'Export a backup',
   'settings.export.description':
-    'Saves {countries} manually marked and {trips} to a JSON file you keep yourself.',
+    'Saves {countries} and {trips} to a .zip file you keep yourself.',
   'settings.export.withPhotos': 'Photos are included.',
   'settings.export.photosIncluded#one':
     'The file is a .zip with your 1 photo inside, next to countries, dates, cities and notes.',
@@ -245,7 +248,8 @@ export const en = {
   'settings.export.saved': 'Backup saved. Check your downloads folder.',
 
   'settings.import.title': 'Import a backup',
-  'settings.import.description': 'Restores a JSON file exported from this app.',
+  'settings.import.description':
+    'Restores a backup exported from this app: a .zip, or a .json from earlier versions.',
   'settings.import.replaces': 'Importing replaces everything.',
   'settings.import.replacesBody':
     'Your current {countries} marked and {trips} will be discarded, not merged. Export a backup first if you want to keep them.',

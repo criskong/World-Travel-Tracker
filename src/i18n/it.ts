@@ -73,7 +73,8 @@ export const it: Record<keyof typeof en, string> = {
   'stats.empty.body':
     'Fai girare il globo e tocca un Paese per aprirne i dettagli. Segnalo come visitato da lì, e i tuoi numeri compariranno qui.',
   'stats.empty.footer': '0 / 195 Paesi · 0% del mondo',
-  'stats.continentBar': '{continent}: {visited} Paesi su {total}, {percentage}%',
+  'stats.continentBar#one': '{continent}: {count} Paese su {total}, {percentage}%',
+  'stats.continentBar#other': '{continent}: {count} Paesi su {total}, {percentage}%',
 
   // --- Viaggi recenti -----------------------------------------------------
   'recent.title': 'Viaggi recenti',
@@ -156,7 +157,8 @@ export const it: Record<keyof typeof en, string> = {
   // --- Statistiche --------------------------------------------------------
   'statistics.title': 'Statistiche',
   'statistics.subtitleEmpty': 'I numeri compariranno qui appena segnerai il primo Paese.',
-  'statistics.subtitle': '{visited} Paesi su {total} · {percentage}% del mondo',
+  'statistics.subtitle#one': '{count} Paese su {total} · {percentage}% del mondo',
+  'statistics.subtitle#other': '{count} Paesi su {total} · {percentage}% del mondo',
   'statistics.totals': 'Totali',
   'statistics.tripsRecorded': 'Viaggi registrati',
   'statistics.acrossCountries': 'in {countries}',
@@ -203,7 +205,8 @@ export const it: Record<keyof typeof en, string> = {
   'achievement.continent-master.description': 'Visita tutti i Paesi di un continente',
   'achievement.world-explorer.name': 'Esploratore del mondo',
   'achievement.world-explorer.description': 'Visita tutti i Paesi del mondo',
-  'achievement.detail.countries': '{current} Paesi su {target}',
+  'achievement.detail.countries#one': '{count} Paese su {target}',
+  'achievement.detail.countries#other': '{count} Paesi su {target}',
   'achievement.detail.continentProgress': '{current} su {total} in {continent}',
   'achievement.detail.continentDone': '{continents}: completato',
 
@@ -234,7 +237,7 @@ export const it: Record<keyof typeof en, string> = {
 
   'settings.export.title': 'Esporta un backup',
   'settings.export.description':
-    'Salva {countries} segnati a mano e {trips} in un file JSON che tieni tu.',
+    'Salva {countries} e {trips} in un file .zip che tieni tu.',
   'settings.export.withPhotos': 'Le foto sono incluse.',
   'settings.export.photosIncluded#one':
     'Il file è uno .zip con dentro la tua foto, insieme a Paesi, date, città e note.',
@@ -249,10 +252,11 @@ export const it: Record<keyof typeof en, string> = {
   'settings.export.saved': 'Backup salvato. Controlla la cartella dei download.',
 
   'settings.import.title': 'Importa un backup',
-  'settings.import.description': 'Ripristina un file JSON esportato da questa app.',
+  'settings.import.description':
+    'Ripristina un backup esportato da questa app: un .zip, o un .json delle versioni precedenti.',
   'settings.import.replaces': 'L’import sostituisce tutto.',
   'settings.import.replacesBody':
-    'I tuoi {countries} segnati e {trips} verranno scartati, non uniti. Esporta prima un backup se vuoi tenerli.',
+    'Quello che hai ora ({countries}, {trips}) verrà scartato, non unito. Esporta prima un backup se vuoi tenerlo.',
   'settings.import.choose': 'Scegli un file di backup',
   'settings.import.reading': 'Lettura…',
   'settings.import.rejected': 'Questo file non è stato importato. I tuoi dati sono intatti.',

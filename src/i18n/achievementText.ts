@@ -26,8 +26,8 @@ export function achievementDetail(
 ): string {
   switch (detail.kind) {
     case 'countries':
-      return translation.t('achievement.detail.countries', {
-        current: detail.current,
+      return translation.t('achievement.detail.countries#', {
+        count: detail.current,
         target: detail.target,
       })
     case 'continent-progress':

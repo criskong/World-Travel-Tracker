@@ -36,8 +36,8 @@ export default function Statistics() {
         <p className="mt-1 text-sm text-muted">
           {nothingYet
             ? t('statistics.subtitleEmpty')
-            : t('statistics.subtitle', {
-                visited: stats.visitedCount,
+            : t('statistics.subtitle#', {
+                count: stats.visitedCount,
                 total: stats.totalCount,
                 percentage: stats.worldPercentage,
               })}
@@ -145,9 +145,9 @@ function ContinentDetail({ stats }: { stats: ContinentStat[] }) {
             <div className="mt-2">
               <ProgressBar
                 value={item.total === 0 ? 0 : item.visited / item.total}
-                label={t('stats.continentBar', {
+                label={t('stats.continentBar#', {
                   continent: continent(item.continent),
-                  visited: item.visited,
+                  count: item.visited,
                   total: item.total,
                   percentage: item.percentage,
                 })}

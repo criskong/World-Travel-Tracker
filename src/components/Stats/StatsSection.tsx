@@ -98,9 +98,9 @@ function ContinentRow({ stat }: { stat: ContinentStat }) {
       <div
         className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/5"
         role="img"
-        aria-label={t('stats.continentBar', {
+        aria-label={t('stats.continentBar#', {
           continent: continent(stat.continent),
-          visited: stat.visited,
+          count: stat.visited,
           total: stat.total,
           percentage: stat.percentage,
         })}

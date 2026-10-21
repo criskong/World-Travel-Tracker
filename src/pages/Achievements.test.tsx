@@ -58,7 +58,7 @@ describe('Achievements', () => {
 
     const next = screen.getByRole('region', { name: 'Next achievement' })
     expect(within(next).getByRole('heading', { level: 2 }).textContent).toBe('First Step')
-    expect(within(next).getByText('0 of 1 countries')).toBeDefined()
+    expect(within(next).getByText('0 of 1 visited')).toBeDefined()
     expect(within(next).getByText(/1 to go · 0%/)).toBeDefined()
   })
 
@@ -77,7 +77,7 @@ describe('Achievements', () => {
     expect(namesIn('Unlocked')).toEqual(['First Step', 'Explorer'])
     const next = screen.getByRole('region', { name: 'Next achievement' })
     expect(within(next).getByRole('heading', { level: 2 }).textContent).toBe('Travel Addict')
-    expect(within(next).getByText('10 of 25 countries')).toBeDefined()
+    expect(within(next).getByText('10 of 25 visited')).toBeDefined()
     expect(within(next).getByText(/15 to go/)).toBeDefined()
   })
 

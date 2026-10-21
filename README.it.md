@@ -309,7 +309,7 @@ due numeri diversi dietro sarebbe una contraddizione sulla stessa schermata.
 - `npx tsc --noEmit` e `npm run build` devono passare puliti.
 - La [CI su GitHub Actions](.github/workflows/ci.yml) ripete typecheck, test e
   build (con la verifica del precache) a ogni push.
-- 588 test Vitest sulla logica pura e sui componenti: statistiche,
+- Oltre 590 test Vitest sulla logica pura e sui componenti: statistiche,
   achievement, validazione dell'import, resolver ISO, riduzione geometrica,
   cache, accessibilita delle modal, contrasto della palette.
 - I test sul globo usano un doppio della libreria, perche montare
